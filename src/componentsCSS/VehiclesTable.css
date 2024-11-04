@@ -1,0 +1,120 @@
+/* Styl dla kontenera */
+.container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Styl dla pola wyszukiwania */
+.search-container {
+    display: flex;
+    justify-self: flex-end;
+    margin-bottom: 10px;
+}
+
+.search-field {
+    max-width: 300px;
+}
+
+/* Styl dla nagłówka tabeli */
+.table-head-cell {
+    font-weight: bold;
+    background-color: #f5f5f5;
+}
+
+/* Szerokości kolumn */
+.table-head-cell:nth-child(1) {
+    width: 40%; /* Kolumna z informacjami o pojeździe */
+}
+
+.table-head-cell:nth-child(2) {
+    width: 25%; /* Kolumna z numerem VIN */
+}
+
+.table-head-cell:nth-child(3),
+.table-head-cell:nth-child(4) {
+    width: 17.5%; /* Kolumny z rokiem produkcji i przebiegiem */
+}
+
+/* Styl dla informacji o pojeździe */
+.vehicle-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vehicle-name {
+    font-size: 1rem;
+    color: #333;
+}
+
+.license-plate {
+    font-size: 0.875rem;
+    color: #666;
+}
+
+/* Style dla wartości w tabeli */
+.mileage {
+    font-family: monospace;
+    color: #444;
+}
+
+/* Hover effect dla wierszy */
+.MuiTableRow-hover:hover {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Style dla przycisków akcji */
+.action-buttons {
+    margin-bottom: 16px;
+}
+
+/* Responsywność */
+@media (max-width: 768px) {
+    .search-field {
+        max-width: 100%;
+    }
+
+    .container {
+        padding: 10px;
+    }
+
+    /* Dostosowanie szerokości kolumn na małych ekranach */
+    .table-head-cell:nth-child(1) {
+        width: 45%;
+    }
+
+    .table-head-cell:nth-child(2) {
+        width: 20%;
+    }
+
+    .table-head-cell:nth-child(3),
+    .table-head-cell:nth-child(4) {
+        width: 17.5%;
+    }
+
+    /* Zmniejszenie rozmiaru czcionki na małych ekranach */
+    .vehicle-name {
+        font-size: 0.875rem;
+    }
+
+    .license-plate {
+        font-size: 0.75rem;
+    }
+}
+
+/* Style dla pustych wartości */
+.empty-value {
+    color: #999;
+    font-style: italic;
+}
+
+/* Animacja przy ładowaniu nowych danych */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.table-container {
+    animation: fadeIn 0.3s ease-in-out;
+}

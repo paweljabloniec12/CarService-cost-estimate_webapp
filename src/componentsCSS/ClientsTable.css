@@ -1,0 +1,54 @@
+/* Styl dla kontenera */
+.container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.action-buttons{
+    display: flex;
+    justify-content: space-between; /* Rozkład przycisków */
+    margin-bottom: 10px;
+}
+
+/* Styl dla pola wyszukiwania */
+.search-container {
+    display: flex;
+    justify-self: flex-end;
+}
+
+.search-field {
+    max-width: 300px;
+}
+
+/* Styl dla nagłówka tabeli */
+.table-head-cell {
+    font-weight: bold;
+}
+
+.table-head-cell-name {
+    width: 40%;
+}
+
+.table-head-cell-phone,
+.table-head-cell-email {
+    width: 30%;
+}
+  
+
+/* Styl dla telefonu i e-maila w wierszach tabeli */
+.phone-link,
+.email-link {
+    color: #2196f3;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+
+@media (max-width: 768px) {
+    .search-field{
+        width: 100%;
+    }
+}

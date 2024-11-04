@@ -1,0 +1,98 @@
+/* Główne style kontenera */
+.container {
+    max-width: 1400px;
+    margin: 20px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Kontener dla przycisków */
+.button-container {
+    display: flex;
+    justify-content: space-between; /* Rozkład przycisków */
+    margin-bottom: 10px;
+}
+
+/* Przycisk dodawania zlecenia */
+.add-order-button {
+    background-color: #28a745; /* Zielony kolor */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px; /* Zaokrąglone rogi */
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.add-order-button:hover {
+    background-color: #218838; /* Ciemniejszy zielony po najechaniu */
+}
+
+/* Przycisk usuwania zleceń (pokaże się tylko przy zaznaczeniu) */
+.delete-order-button {
+    background-color: #dc3545; /* Czerwony kolor */
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px; /* Zaokrąglone rogi */
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.delete-order-button i {
+    font-size: 18px;
+}
+
+/* Style dla tabeli */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+/* Stylizacja nagłówka tabeli */
+.MuiTableHead-root .MuiTableCell-root {
+    font-weight: bold;
+}
+
+.search-container {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.search-field {
+    max-width: 300px;
+}
+
+  
+
+th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+/* Checkbox do zaznaczania wszystkich */
+.select-all {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .button-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .add-order-button, .delete-order-button {
+        width: 100%;
+    }
+}
+
+.clickable-row:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }

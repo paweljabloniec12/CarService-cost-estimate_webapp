@@ -1,0 +1,151 @@
+/* Kontener główny */
+.container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Kontener wyszukiwania */
+.search-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.search-field {
+    max-width: 300px;
+}
+
+/* Nagłówki tabeli */
+.table-head-cell {
+    font-weight: bold;
+    background-color: #f5f5f5;
+}
+
+.table-head-cell:nth-child(2) {
+    width: 60%; /* Kolumna z nazwą usługi */
+}
+
+.table-head-cell:nth-child(3) {
+    width: 40%; /* Kolumna z ceną */
+}
+
+/* Style dla informacji o usłudze */
+.service-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.service-name {
+    font-size: 1rem;
+    color: #333;
+}
+
+.service-price {
+    font-family: monospace;
+    color: #444;
+    font-weight: 500;
+}
+
+/* Hover effect dla wierszy */
+.MuiTableRow-hover:hover {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Przyciski akcji */
+.action-buttons {
+    display: flex;
+    justify-content: space-between;
+}
+
+.action-buttons button {
+    transition: transform 0.2s ease;
+}
+
+/* Responsywność */
+@media (max-width: 768px) {
+    .search-field {
+        max-width: 100%;
+    }
+
+    .container {
+        padding: 10px;
+    }
+
+    /* Dostosowanie szerokości kolumn na małych ekranach */
+    .table-head-cell:nth-child(1) {
+        width: 15%;
+    }
+
+    .table-head-cell:nth-child(2) {
+        width: 50%;
+    }
+
+    .table-head-cell:nth-child(3) {
+        width: 35%;
+    }
+
+    /* Zmniejszenie rozmiaru czcionki */
+    .service-name {
+        font-size: 0.875rem;
+    }
+
+    .service-price {
+        font-size: 0.875rem;
+    }
+}
+
+/* Puste wartości */
+.empty-value {
+    color: #999;
+    font-style: italic;
+}
+
+/* Animacje */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.table-container {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Style dla przycisku usuwania */
+.delete-button {
+    color: #ef4444;
+    transition: all 0.2s ease;
+}
+
+.delete-button:hover {
+    background-color: #fee2e2;
+}
+
+/* Style dla przycisku dodawania */
+.add-button {
+    color: #3b82f6;
+    transition: all 0.2s ease;
+}
+
+.add-button:hover {
+    background-color: #dbeafe;
+}
+
+/* Animacja dla przycisków akcji */
+.action-button {
+    transition: all 0.2s ease;
+}
+
+.action-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Style dla paginacji */
+.pagination-container {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 8px 0;
+}

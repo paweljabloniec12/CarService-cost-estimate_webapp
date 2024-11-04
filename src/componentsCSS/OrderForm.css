@@ -1,0 +1,50 @@
+.formField {
+    margin-bottom: 24px; /* Ustaw odstęp między polami */
+  }
+
+  .tabs {
+    display: flex;
+    margin-bottom: 20px;
+  }
+  
+  .tab {
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.5s ease;
+  }
+  
+  .tab:hover {
+    background: #f0f0f0;
+  }
+  
+  .tab.active {
+    background: #f0f0f0;
+    border-bottom: 2px solid #007bff;
+    font-weight: bold;
+  }
+
+  .final-price{
+    display: flex;
+    justify-content: flex-end;
+  }
+
+
+  @media (max-width: 768px) {
+  .formField {
+    margin-bottom: 16px;
+  }
+
+  /* Responsywna tabela */
+  .servicesTable {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .final-price {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+}
