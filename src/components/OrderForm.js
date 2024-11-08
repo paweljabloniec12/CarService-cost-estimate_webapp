@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import NewClientForm from './NewClientForm';
 import NewVehicleForm from './NewVehicleForm';
 import NewServiceForm from './NewServiceForm';
@@ -9,12 +8,26 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import '../componentsCSS/OrderForm.css'
+import supabase from '../supabaseClient.js';
 
 const OrderForm = ({ onClose, fetchOrders, formData }) => {
-  const [klientId, setKlientId] = useState(formData?.klient_id || '');
-  const [pojazdId, setPojazdId] = useState(formData?.pojazd_id || '');
+  // Funkcja pomocnicza do formatowania daty
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+
+    // Jeśli data jest w formacie ISO, weź tylko część odpowiadającą za datę
+    if (dateString.includes('T')) {
+      return dateString.split('T')[0];
+    }
+
+    // Jeśli data jest już w poprawnym formacie, zwróć ją bez zmian
+    return dateString;
+  };
+
+  const [klientId, setKlientId] = useState(formData?.klienci?.id || '');
+  const [pojazdId, setPojazdId] = useState(formData?.pojazdy?.id || '');
   const [uszkodzenia, setUszkodzenia] = useState(formData?.uszkodzenia || '');
-  const [dataZlecenia, setDataZlecenia] = useState("");
+  const [dataZlecenia, setDataZlecenia] = useState(formatDate(formData?.data_zlecenia) || "");
   const [addedServices, setAddedServices] = useState(formData?.uslugi || []);
   const [klienci, setKlienci] = useState([]);
   const [pojazdy, setPojazdy] = useState([]);
@@ -36,25 +49,37 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
   const [errorMessage, setErrorMessage] = useState('');
 
 
+  // Funkcja do pobierania danych z Supabase
   const fetchData = async () => {
     try {
-      const klienciResponse = await axios.get('/api/klienci');
-      const pojazdyResponse = await axios.get('/api/pojazdy');
-      const uslugiResponse = await axios.get('/api/uslugi');
+      // Pobranie danych z tabel klienci, pojazdy i uslugi
+      const { data: klienci, error: error1 } = await supabase.from('klienci').select('*');
+      const { data: pojazdy, error: error2 } = await supabase.from('pojazdy').select('*');
+      const { data: uslugi, error: error3 } = await supabase.from('uslugi').select('*');
+      if (error1 || error2 || error3) {
+        throw new Error('Błąd podczas pobierania danych z Supabase');
+      }
 
-      setKlienci(klienciResponse.data);
-      setPojazdy(pojazdyResponse.data);
-      setUslugi(uslugiResponse.data);
+      setKlienci(klienci);
+      setPojazdy(pojazdy);
+      setUslugi(uslugi);
     } catch (error) {
-      console.error('Błąd podczas pobierania klientów lub pojazdów:', error);
+      console.error('Błąd podczas pobierania danych:', error);
     }
   };
 
-  // Funkcja do pobierania usług z API
+  // Funkcja do pobierania usług z Supabase
   const fetchServices = async () => {
     try {
-      const response = await axios.get('/api/uslugi');
-      setUslugi(response.data);
+      // Pobranie danych z tabeli uslugi
+      const { data: uslugi, error } = await supabase.from('uslugi').select('*');
+
+
+      if (error) {
+        throw new Error('Błąd podczas pobierania usług z Supabase');
+      }
+
+      setUslugi(uslugi);
     } catch (error) {
       console.error('Błąd podczas pobierania usług:', error);
     }
@@ -67,13 +92,41 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
   // Wstępna inicjalizacja stanu
 
 
+  const fetchOrderServices = async (orderId) => {
+    try {
+      // Pobieramy dane z tabeli zlecenia_uslugi wraz z powiązanymi danymi z tabeli uslugi
+      const { data: orderServices, error } = await supabase
+        .from('zlecenia_uslugi')
+        .select(`
+          *,
+          uslugi:usluga_id (
+            id,
+            nazwa
+          )
+        `)
+        .eq('zlecenie_id', orderId);
+
+      if (error) throw error;
+
+      // Mapujemy dane do bardziej przyjaznej struktury
+      const servicesWithDetails = orderServices.map(service => ({
+        ...service,
+        nazwa: service.uslugi.nazwa, // Dodajemy nazwę usługi z relacji
+        quantity: service.ilosc,
+        total: service.kwota,
+      }));
+
+      setAddedServices(servicesWithDetails);
+    } catch (error) {
+      console.error("Błąd podczas pobierania usług zlecenia:", error);
+    }
+  };
+
   useEffect(() => {
-    if (formData && formData.data_zlecenia) {
-      const formattedDate = formData.data_zlecenia.split(" ")[0];
-      setDataZlecenia(formattedDate);
+    if (formData?.id) {
+      fetchOrderServices(formData.id);
     }
   }, [formData]);
-
 
 
   const handleKlientChange = (event, value) => {
@@ -108,6 +161,32 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
     return services.reduce((sum, service) => sum + parseFloat(service.total), 0);
   };
 
+  const formatAmount = (amount) => {
+    if (!amount) return 0.00;
+
+    try {
+      const amountStr = amount.toString();
+
+      // Sprawdzamy czy string zawiera przecinek
+      let parsed;
+      if (amountStr.includes(',')) {
+        parsed = parseFloat(amountStr.replace(',', '.'));
+      } else {
+        parsed = parseFloat(amountStr);
+      }
+
+      // Sprawdzamy czy mamy prawidłową liczbę
+      if (isNaN(parsed)) return 0.00;
+
+      // Zaokrąglamy do 2 miejsc po przecinku i zwracamy jako liczbę
+      return Number(parsed.toFixed(2));
+    } catch (error) {
+      console.error('Błąd podczas formatowania kwoty:', error);
+      return 0.00;
+    }
+  };
+
+
   const handleDeleteClick = (index) => {
     setDeleteIndex(index);
     setOpenDialog(true);
@@ -135,47 +214,76 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
 
     try {
       const orderData = {
-        klientId,
-        pojazdId,
+        klient_id: klientId,
+        pojazd_id: pojazdId,
         uszkodzenia,
-        dataZlecenia,
+        data_zlecenia: dataZlecenia,
         cena: calculateTotalPrice(addedServices),
-
       };
 
-      if (formData?.zlecenie_id) {
+      if (formData?.id) {
         // Aktualizacja istniejącego zlecenia
-        await axios.put(`/api/zlecenia/${formData.zlecenie_id}`, orderData);
+        const { error } = await supabase
+          .from('zlecenia')
+          .update(orderData)
+          .eq('id', formData.id);
+
+        if (error) {
+          throw new Error('Błąd podczas aktualizacji zlecenia.');
+        }
 
         // Aktualizacja usług zlecenia
         // Najpierw usuń wszystkie istniejące usługi
-        await axios.delete(`/api/zlecenia/${formData.zlecenie_id}/uslugi`);
+        await supabase
+          .from('zlecenia_uslugi')
+          .delete()
+          .eq('zlecenie_id', formData.id);
 
         // Dodaj zaktualizowane usługi
         if (addedServices.length > 0) {
-          const servicesData = {
-            uslugi: addedServices.map(service => ({
-              id: service.id,
-              quantity: service.quantity,
-              total: service.total
-            }))
-          };
-          await axios.post(`/api/zlecenia/${formData.zlecenie_id}/uslugi`, servicesData);
+          const servicesData = addedServices.map((service) => ({
+            zlecenie_id: formData.id,
+            usluga_id: service.usluga_id || service.id,
+            ilosc: service.quantity,
+            kwota: formatAmount(service.total),
+          }));
+
+          const { error: insertError } = await supabase
+            .from('zlecenia_uslugi')
+            .insert(servicesData);
+
+          if (insertError) {
+            throw new Error('Błąd podczas aktualizacji usług zlecenia.');
+          }
         }
       } else {
         // Tworzenie nowego zlecenia
-        const orderResponse = await axios.post('/api/zlecenia', orderData);
-        const newOrderId = orderResponse.data.id;
+        const { data, error } = await supabase
+          .from('zlecenia')
+          .insert(orderData)
+          .select('id');
+
+        if (error) {
+          throw new Error('Błąd podczas utworzenia nowego zlecenia.');
+        }
+
+        const newOrderId = data[0].id;
 
         if (addedServices.length > 0) {
-          const servicesData = {
-            uslugi: addedServices.map(service => ({
-              id: service.id,
-              quantity: service.quantity,
-              total: service.total
-            }))
-          };
-          await axios.post(`/api/zlecenia/${newOrderId}/uslugi`, servicesData);
+          const servicesData = addedServices.map((service) => ({
+            zlecenie_id: newOrderId,
+            usluga_id: service.id,
+            ilosc: service.quantity,
+            kwota: formatAmount(service.total),
+          }));
+
+          const { error: insertError } = await supabase
+            .from('zlecenia_uslugi')
+            .insert(servicesData);
+
+          if (insertError) {
+            throw new Error('Błąd podczas dodawania usług do nowego zlecenia.');
+          }
         }
       }
 
@@ -190,7 +298,7 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
 
   return (
     <div>
-      <h2>{formData?.zlecenie_id ? `Edycja zlecenia #${formData.zlecenie_id}` : 'Nowe zlecenie'}</h2>
+      <h2>{formData?.id ? `Edycja zlecenia #${formData.id}` : 'Nowe zlecenie'}</h2>
 
       {/* Zakładki */}
       <Tabs

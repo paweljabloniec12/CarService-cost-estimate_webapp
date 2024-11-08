@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import OrderForm from './OrderForm';
-import Modal from './Modal'; // Importuj komponent Modal
-import '../componentsCSS/OrdersTable.css'; // Nowy plik CSS
+import Modal from './Modal';
+import '../componentsCSS/OrdersTable.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { Phone } from 'lucide-react';
+import supabase from '../supabaseClient.js';
 import {
   Table,
   TableBody,
@@ -19,6 +19,8 @@ import {
   TextField,
 } from '@mui/material';
 
+
+
 const OrdersTable = () => {
   const [orders, setOrders] = useState([]);
   const [selectedOrders, setSelectedOrders] = useState([]);
@@ -28,20 +30,29 @@ const OrdersTable = () => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({});
-  const [hoveredRowId, setHoveredRowId] = useState(null); // Stan dla przechowywania ID aktualnie najedzionej komórki
-
-
-
-
+  const [hoveredRowId, setHoveredRowId] = useState(null);
 
   const fetchOrders = async () => {
     try {
-      const response = await axios.get('/api/zlecenia');
-      setOrders(response.data);
-      setSelectedOrders([]);
-      setSelectAll(false);
+      const { data, error } = await supabase
+        .from('zlecenia')
+        .select(`
+          id,
+          pojazdy (id, producent, model, nr_rejestracyjny),
+          uszkodzenia,
+          klienci (id, imie, nazwisko, telefon),
+          cena
+        `);
+
+      if (error) {
+        console.error('Błąd podczas pobierania zleceń:', error);
+      } else {
+        setOrders(data);
+        setSelectedOrders([]);
+        setSelectAll(false);
+      }
     } catch (error) {
-      console.error('Błąd podczas pobierania zleceń:', error);
+      console.error('Błąd podczas komunikacji z Supabase:', error);
     }
   };
 
@@ -59,56 +70,48 @@ const OrdersTable = () => {
 
   const handleOrderClick = async (orderId) => {
     try {
-      // Pobierz szczegółowe dane zlecenia
-      const orderResponse = await axios.get(`/api/zlecenia/${orderId}`);
-
-      // Przygotuj dane do edycji
-      const orderData = {
-        ...orderResponse.data,
-        uslugi: [] // Domyślnie ustaw puste usługi
-      };
-
-      try {
-        // Spróbuj pobrać usługi zlecenia
-        const servicesResponse = await axios.get(`/api/zlecenia/${orderId}/uslugi`);
-        orderData.uslugi = servicesResponse.data; // Ustaw usługi, jeśli są dostępne
-      } catch (error) {
-        // Jeśli nie ma usług, logujemy błąd, ale kontynuujemy
-        console.warn('Brak usług dla tego zlecenia:', error.message);
-      }
-
-      setFormData(orderData); // Przekaż dane do formularza
-      setShowForm(true); // Otwórz formularz
+      const { data: orderData, error: orderError } = await supabase
+        .from('zlecenia')
+        .select(`
+          id,
+          pojazdy (id, producent, model, nr_rejestracyjny),
+          uszkodzenia,
+          data_zlecenia,
+          klienci (id, imie, nazwisko, telefon),
+          cena,
+          zlecenia_uslugi (id, usluga_id, ilosc, kwota, uslugi (id, nazwa, cena))
+        `)
+        .eq('id', orderId)
+        .single();
+  
+      if (orderError) throw orderError;
+  
+      setFormData(orderData);
+      setShowForm(true);
     } catch (error) {
       console.error('Błąd podczas pobierania danych zlecenia:', error);
     }
   };
 
-
-  useEffect(() => {
-    if (orders.length === 0) {
-      setSelectAll(false);
-    } else {
-      setSelectAll(selectedOrders.length === orders.length);
-    }
-  }, [selectedOrders, orders]);
-
-
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedOrders([]);
     } else {
-      setSelectedOrders(orders.map((order) => order.zlecenie_id));
+      setSelectedOrders(orders.map((order) => order.id));
     }
     setSelectAll(!selectAll);
   };
 
   const deleteSelectedOrders = async () => {
     try {
-      await Promise.all(
-        selectedOrders.map((orderId) => axios.delete(`/api/zlecenia/${orderId}`))
-      );
-      fetchOrders();
+      const { error } = await supabase
+        .from('zlecenia')
+        .delete()
+        .in('id', selectedOrders);
+
+      if (error) throw error;
+      
+      await fetchOrders();
     } catch (error) {
       console.error('Błąd podczas usuwania zleceń:', error);
     }
@@ -116,11 +119,10 @@ const OrdersTable = () => {
 
   const toggleForm = (resetForm = false) => {
     if (resetForm) {
-      setFormData({});        // Resetowanie danych formularza
+      setFormData({});
     }
     setShowForm(!showForm);
   };
-
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -131,14 +133,12 @@ const OrdersTable = () => {
     setPage(0);
   };
 
-
-  // Funkcja do filtrowania zleceń na podstawie imienia i nazwiska klienta
   const filteredOrders = orders.filter((order) => {
-    const fullName = `${order.imie} ${order.nazwisko}`.toLowerCase();
-    const registrationNumber = order.nr_rejestracyjny?.toLowerCase() || ''; // Zabezpieczenie przed brakiem nr rejestracyjnego
-    return fullName.includes(searchQuery.toLowerCase()) || registrationNumber.includes(searchQuery.toLowerCase());
+    const fullName = `${order.klienci.imie} ${order.klienci.nazwisko}`.toLowerCase();
+    const registrationNumber = order.pojazdy.nr_rejestracyjny?.toLowerCase() || '';
+    return fullName.includes(searchQuery.toLowerCase()) || 
+           registrationNumber.includes(searchQuery.toLowerCase());
   });
-
 
   return (
     <div className="container">
@@ -156,7 +156,6 @@ const OrdersTable = () => {
 
       <div className="search-container">
         <div className="search-field">
-          {/* Pole tekstowe do wyszukiwania */}
           <TextField
             label="Wyszukaj klienta/nr rej"
             variant="outlined"
@@ -168,8 +167,6 @@ const OrdersTable = () => {
           />
         </div>
       </div>
-
-
 
       {showForm && (
         <Modal isOpen={showForm} onClose={toggleForm}>
@@ -197,43 +194,40 @@ const OrdersTable = () => {
           </TableHead>
           <TableBody>
             {filteredOrders
-              .sort((a, b) => b.zlecenie_id - a.zlecenie_id) // Sortowanie od największego do najmniejszego
+              .sort((a, b) => b.id - a.id)
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((order) => (
-                <TableRow key={order.zlecenie_id}>
+                <TableRow key={order.id}>
                   <TableCell padding="checkbox">
                     <Checkbox
-                      checked={selectedOrders.includes(order.zlecenie_id)}
-                      onChange={() => handleSelectOrder(order.zlecenie_id)}
+                      checked={selectedOrders.includes(order.id)}
+                      onChange={() => handleSelectOrder(order.id)}
                       color="primary"
                     />
                   </TableCell>
                   <TableCell
-                    onClick={() => handleOrderClick(order.zlecenie_id)}
+                    onClick={() => handleOrderClick(order.id)}
                     style={{
                       cursor: 'pointer',
                       transition: 'background-color 0.3s',
-                      backgroundColor: hoveredRowId === order.zlecenie_id ? '#f0f0f0' : 'transparent',
+                      backgroundColor: hoveredRowId === order.id ? '#f0f0f0' : 'transparent',
                     }}
-                    onMouseEnter={() => setHoveredRowId(order.zlecenie_id)}
+                    onMouseEnter={() => setHoveredRowId(order.id)}
                     onMouseLeave={() => setHoveredRowId(null)}
                   >
-                    {order.zlecenie_id}
+                    <strong>#{order.id}</strong>
                   </TableCell>
-
                   <TableCell>
-                    <strong>{order.producent} {order.model}</strong>
+                    <strong>{order.pojazdy.producent} {order.pojazdy.model}</strong>
                     <br />
-                    {order.nr_rejestracyjny || ''}
+                    {order.pojazdy.nr_rejestracyjny || ''}
                   </TableCell>
-
                   <TableCell>{order.uszkodzenia}</TableCell>
-
                   <TableCell>
-                    <strong>{order.imie} {order.nazwisko}</strong>
+                    <strong>{order.klienci.imie} {order.klienci.nazwisko}</strong>
                     <br />
                     <a
-                      href={`tel:+48${order.telefon}`}
+                      href={`tel:+48${order.klienci.telefon}`}
                       style={{
                         color: '#2196f3',
                         textDecoration: 'none',
@@ -244,10 +238,9 @@ const OrdersTable = () => {
                       }}
                     >
                       <Phone size={16} />
-                      {order.telefon}
+                      {order.klienci.telefon}
                     </a>
                   </TableCell>
-
                   <TableCell style={{textAlign: "center", fontSize: "16px"}}>
                     <strong>{order.cena} PLN</strong>
                   </TableCell>
@@ -256,7 +249,6 @@ const OrdersTable = () => {
           </TableBody>
         </Table>
       </TableContainer>
-
 
       <TablePagination
         rowsPerPageOptions={[5, 10, 15]}

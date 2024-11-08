@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import {
     Table,
     TableBody,
@@ -21,6 +20,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import NewServiceForm from './NewServiceForm';
 import '../componentsCSS/ServicesTable.css';
+import supabase from '../supabaseClient.js';
+
 
 const ServicesTable = () => {
     const [services, setServices] = useState([]);
@@ -33,18 +34,18 @@ const ServicesTable = () => {
     const [editingService, setEditingService] = useState(null);
     const [editFormData, setEditFormData] = useState({ nazwa: '', cena: '' });
 
-    // Pobieranie usług z bazy
     const fetchServices = async () => {
         try {
-            const response = await axios.get('/api/uslugi');
-            const sortedServices = response.data.sort((a, b) =>
+            const { data: services, error } = await supabase.from('uslugi').select('*').order('nazwa', { ascending: true });
+            if (error) throw error;
+            const sortedServices = services.sort((a, b) =>
                 a.nazwa.localeCompare(b.nazwa, 'pl', { sensitivity: 'base' })
             );
             setServices(sortedServices);
             setSelectedServices([]);
             setSelectAll(false);
         } catch (error) {
-            console.error('Błąd podczas pobierania usług:', error);
+            console.error('Error fetching services:', error);
         }
     };
 
@@ -52,11 +53,8 @@ const ServicesTable = () => {
         fetchServices();
     }, []);
 
-    // Obsługa edycji usługi
     const handleRowClick = (service) => {
-        // Prevent opening edit form if checkbox was clicked
         if (selectedServices.includes(service.id)) return;
-        
         setEditingService(service);
         setEditFormData({
             nazwa: service.nazwa,
@@ -72,11 +70,15 @@ const ServicesTable = () => {
     const handleEditFormSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.put(`/api/uslugi/${editingService.id}`, editFormData);
+            const { error } = await supabase
+                .from('uslugi')
+                .update(editFormData)
+                .eq('id', editingService.id);
+            if (error) throw error;
             await fetchServices();
             handleEditFormClose();
         } catch (error) {
-            console.error('Błąd podczas aktualizacji usługi:', error);
+            console.error('Error updating service:', error);
         }
     };
 
@@ -88,7 +90,6 @@ const ServicesTable = () => {
         }));
     };
 
-    // Pozostałe funkcje bez zmian...
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
@@ -140,11 +141,13 @@ const ServicesTable = () => {
     const deleteSelectedServices = async () => {
         try {
             await Promise.all(
-                selectedServices.map((serviceId) => axios.delete(`/api/uslugi/${serviceId}`))
+                selectedServices.map((serviceId) =>
+                    supabase.from('uslugi').delete().eq('id', serviceId)
+                )
             );
-            fetchServices();
+            await fetchServices();
         } catch (error) {
-            console.error('Błąd podczas usuwania usług:', error);
+            console.error('Error deleting services:', error);
         }
     };
 

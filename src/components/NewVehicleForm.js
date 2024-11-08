@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { TextField, Button, Drawer, Box } from '@mui/material';
+import { Drawer, Box, TextField, Button } from '@mui/material';
+import supabase from '../supabaseClient.js';
 
 const NewVehicleForm = ({ open, onClose, onVehicleAdded }) => {
   const [vin, setVin] = useState('');
@@ -13,18 +13,27 @@ const NewVehicleForm = ({ open, onClose, onVehicleAdded }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      const response = await axios.post('/api/pojazdy', {
-        vin,
-        nr_rejestracyjny,
-        producent,
-        model,
-        generacja,
-        rok,
-        przebieg,
-      });
-      onVehicleAdded(response.data.id);
-      onClose();
+      const { data, error } = await supabase
+        .from('pojazdy')
+        .insert([{
+          vin,
+          nr_rejestracyjny,
+          producent,
+          model,
+          generacja,
+          rok: parseInt(rok),
+          przebieg: parseFloat(przebieg)
+        }])
+        .select('id');
+
+      if (error) {
+        console.error('Błąd podczas dodawania pojazdu:', error);
+      } else {
+        onVehicleAdded(data.id);
+        onClose();
+      }
     } catch (error) {
       console.error('Błąd podczas dodawania pojazdu:', error);
     }

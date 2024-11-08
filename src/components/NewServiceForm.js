@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { TextField, Button, Drawer, Box } from '@mui/material';
+import { Drawer, Box, TextField, Button } from '@mui/material';
+import supabase from '../supabaseClient.js';
 
 const NewServiceForm = ({ open, onClose, onServiceAdded }) => {
   const [nazwa, setNazwa] = useState('');
@@ -8,11 +8,19 @@ const NewServiceForm = ({ open, onClose, onServiceAdded }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      // Dodaj nową usługę do bazy danych
-      const response = await axios.post('/api/uslugi', { nazwa, cena });
-      onServiceAdded(response.data.id); // Wywołanie po dodaniu nowej usługi
-      onClose();
+      const { data, error } = await supabase
+        .from('uslugi')
+        .insert([{ nazwa, cena: parseFloat(cena) }])
+        .select('id');
+
+      if (error) {
+        console.error('Błąd podczas dodawania usługi:', error);
+      } else {
+        onServiceAdded(data.id);
+        onClose();
+      }
     } catch (error) {
       console.error('Błąd podczas dodawania usługi:', error);
     }

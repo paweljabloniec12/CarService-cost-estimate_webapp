@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import {
   Table,
   TableBody,
@@ -22,6 +21,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import NewClientForm from './NewClientForm';
 import '../componentsCSS/ClientsTable.css';
+import supabase from '../supabaseClient.js';
 
 const ClientsTable = () => {
   const [clients, setClients] = useState([]);
@@ -58,112 +58,141 @@ const ClientsTable = () => {
     },
   };
 
-// Pobieranie klientów z bazy
-const fetchClients = async () => {
-  try {
-    const response = await axios.get('/api/klienci');
-    setClients(response.data);
-    setSelectedClients([]); // Reset zaznaczonych klientów
-    setSelectAll(false); // Reset zaznaczenia wszystkich
-  } catch (error) {
-    console.error('Błąd podczas pobierania klientów:', error);
-  }
-};
+  // Pobieranie klientów z bazy Supabase
+  const fetchClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('klienci')
+        .select('*')
+        .order('nazwisko', { ascending: true })
+        .order('imie', { ascending: true });
 
-useEffect(() => {
-  fetchClients();
-}, []);
 
-// Obsługa zaznaczania pojedynczego klienta
-const handleSelectClient = (id) => {
-  setSelectedClients((prevSelected) =>
-    prevSelected.includes(id)
-      ? prevSelected.filter((clientId) => clientId !== id)
-      : [...prevSelected, id]
-  );
-};
+      if (error) {
+        console.error('Błąd podczas pobierania klientów:', error);
+      } else {
+        setClients(data);
+        setSelectedClients([]); // Reset zaznaczonych klientów
+        setSelectAll(false); // Reset zaznaczenia wszystkich
+      }
+    } catch (error) {
+      console.error('Błąd podczas pobierania klientów:', error);
+    }
+  };
 
-// Obsługa zaznaczania wszystkich klientów
-const handleSelectAll = () => {
-  if (selectAll) {
-    setSelectedClients([]);
-  } else {
-    setSelectedClients(clients.map((client) => client.id));
-  }
-  setSelectAll(!selectAll);
-};
-
-// Effect do aktualizacji stanu selectAll
-useEffect(() => {
-  if (clients.length === 0) {
-    setSelectAll(false);
-  } else {
-    setSelectAll(selectedClients.length === clients.length);
-  }
-}, [selectedClients, clients]);
-
-// Funkcja do usuwania zaznaczonych klientów
-const deleteSelectedClients = async () => {
-  try {
-    await Promise.all(
-      selectedClients.map((clientId) => axios.delete(`/api/klienci/${clientId}`))
-    );
+  useEffect(() => {
     fetchClients();
-  } catch (error) {
-    console.error('Błąd podczas usuwania klientów:', error);
-  }
-};
+  }, []);
 
-// Obsługa paginacji
-const handleChangePage = (event, newPage) => {
-  setPage(newPage);
-};
+  // Obsługa zaznaczania pojedynczego klienta
+  const handleSelectClient = (id) => {
+    setSelectedClients((prevSelected) =>
+      prevSelected.includes(id)
+        ? prevSelected.filter((clientId) => clientId !== id)
+        : [...prevSelected, id]
+    );
+  };
 
-const handleChangeRowsPerPage = (event) => {
-  setRowsPerPage(parseInt(event.target.value, 10));
-  setPage(0);
-};
+  // Obsługa zaznaczania wszystkich klientów
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedClients([]);
+    } else {
+      setSelectedClients(clients.map((client) => client.id));
+    }
+    setSelectAll(!selectAll);
+  };
 
-// Filtrowanie klientów
-const filteredClients = clients.filter((client) => {
-  const fullName = `${client.imie} ${client.nazwisko}`.toLowerCase();
-  return fullName.includes(searchQuery.toLowerCase());
-});
+  // Effect do aktualizacji stanu selectAll
+  useEffect(() => {
+    if (clients.length === 0) {
+      setSelectAll(false);
+    } else {
+      setSelectAll(selectedClients.length === clients.length);
+    }
+  }, [selectedClients, clients]);
 
-// Formatowanie numeru telefonu
-const formatPhoneNumber = (phone) => {
-  if (!phone) return '';
-  const cleaned = phone.replace(/\D/g, '');
-  return cleaned.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3');
-};
+  // Funkcja do usuwania zaznaczonych klientów
+  const deleteSelectedClients = async () => {
+    try {
+      for (const clientId of selectedClients) {
+        const { error } = await supabase
+          .from('klienci')
+          .delete()
+          .eq('id', clientId);
+        if (error) {
+          console.error(`Błąd podczas usuwania klienta ${clientId}:`, error);
+        }
+      }
+      fetchClients();
+    } catch (error) {
+      console.error('Błąd podczas usuwania klientów:', error);
+    }
+  };
 
-// Obsługa dodawania klienta
-const handleAddClient = () => {
-  setShowAddKlientModal(true); // Otwórz Drawer
-};
+  // Obsługa paginacji
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
 
-// Funkcja otwierająca dialog edycji
-const handleEditClient = (client) => {
-  setEditingClient(client);
-  setIsEditDialogOpen(true);
-};
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
-// Funkcja zamykająca dialog edycji
-const handleCloseEditDialog = () => {
-  setEditingClient(null);
-  setIsEditDialogOpen(false);
-};
+  // Filtrowanie klientów
+  const filteredClients = clients.filter((client) => {
+    const fullName = `${client.imie} ${client.nazwisko}`.toLowerCase();
+    return fullName.includes(searchQuery.toLowerCase());
+  });
 
-// Aktualizacja danych klienta
-const handleSaveClient = async () => {
-  try {
-    await axios.put(`/api/klienci/${editingClient.id}`, editingClient);
-    fetchClients(); // Odśwież klientów po zapisie
-    handleCloseEditDialog();
-  } catch (error) {
-    console.error("Błąd podczas aktualizacji klienta:", error);
-  }
-};
+  // Formatowanie numeru telefonu
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return '';
+    const cleaned = phone.replace(/\D/g, '');
+    return cleaned.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3');
+  };
+
+  // Obsługa dodawania klienta
+  const handleAddClient = () => {
+    setShowAddKlientModal(true); // Otwórz Drawer
+  };
+
+  // Funkcja otwierająca dialog edycji
+  const handleEditClient = (client) => {
+    setEditingClient(client);
+    setIsEditDialogOpen(true);
+  };
+
+  // Funkcja zamykająca dialog edycji
+  const handleCloseEditDialog = () => {
+    setEditingClient(null);
+    setIsEditDialogOpen(false);
+  };
+
+  // Aktualizacja danych klienta
+  const handleSaveClient = async () => {
+    try {
+      const { error } = await supabase
+        .from('klienci')
+        .update({
+          imie: editingClient.imie,
+          nazwisko: editingClient.nazwisko,
+          telefon: editingClient.telefon,
+          email: editingClient.email
+        })
+        .eq('id', editingClient.id);
+
+      if (error) {
+        console.error("Błąd podczas aktualizacji klienta:", error);
+      } else {
+        fetchClients(); // Odśwież klientów po zapisie
+        handleCloseEditDialog();
+      }
+    } catch (error) {
+      console.error("Błąd podczas aktualizacji klienta:", error);
+    }
+  };
 
   return (
     <div className="container">

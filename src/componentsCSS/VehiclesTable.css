@@ -33,7 +33,7 @@
 
 .table-head-cell:nth-child(3),
 .table-head-cell:nth-child(4) {
-    width: 17.5%; /* Kolumny z rokiem produkcji i przebiegiem */
+    width: 20%; /* Kolumny z rokiem produkcji i przebiegiem */
 }
 
 /* Styl dla informacji o pojeździe */

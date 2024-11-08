@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import {
     Table,
     TableBody,
@@ -21,6 +20,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import NewVehicleForm from './NewVehicleForm';
 import '../componentsCSS/VehiclesTable.css';
+import supabase from '../supabaseClient.js';
+
 
 const VehiclesTable = () => {
     const [vehicles, setVehicles] = useState([]);
@@ -43,12 +44,13 @@ const VehiclesTable = () => {
 
     const fetchVehicles = async () => {
         try {
-            const response = await axios.get('/api/pojazdy');
-            setVehicles(response.data);
+            const { data: vehicles, error } = await supabase.from('pojazdy').select('*');
+            if (error) throw error;
+            setVehicles(vehicles);
             setSelectedVehicles([]);
             setSelectAll(false);
         } catch (error) {
-            console.error('Błąd podczas pobierania pojazdów:', error);
+            console.error('Error fetching vehicles:', error);
         }
     };
 
@@ -56,11 +58,8 @@ const VehiclesTable = () => {
         fetchVehicles();
     }, []);
 
-    // Obsługa edycji pojazdu
     const handleRowClick = (vehicle) => {
-        // Prevent opening edit form if checkbox was clicked
         if (selectedVehicles.includes(vehicle.id)) return;
-        
         setEditingVehicle(vehicle);
         setEditFormData({
             producent: vehicle.producent || '',
@@ -89,11 +88,15 @@ const VehiclesTable = () => {
     const handleEditFormSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.put(`/api/pojazdy/${editingVehicle.id}`, editFormData);
+            const { error } = await supabase
+                .from('pojazdy')
+                .update(editFormData)
+                .eq('id', editingVehicle.id);
+            if (error) throw error;
             await fetchVehicles();
             handleEditFormClose();
         } catch (error) {
-            console.error('Błąd podczas aktualizacji pojazdu:', error);
+            console.error('Error updating vehicle:', error);
         }
     };
 
@@ -105,7 +108,6 @@ const VehiclesTable = () => {
         }));
     };
 
-    // Pozostałe funkcje bez zmian...
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
@@ -156,11 +158,13 @@ const VehiclesTable = () => {
     const deleteSelectedVehicles = async () => {
         try {
             await Promise.all(
-                selectedVehicles.map((vehicleId) => axios.delete(`/api/pojazdy/${vehicleId}`))
+                selectedVehicles.map((vehicleId) =>
+                    supabase.from('pojazdy').delete().eq('id', vehicleId)
+                )
             );
-            fetchVehicles();
+            await fetchVehicles();
         } catch (error) {
-            console.error('Błąd podczas usuwania pojazdów:', error);
+            console.error('Error deleting vehicles:', error);
         }
     };
 
