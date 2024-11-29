@@ -13,7 +13,7 @@ Aplikacja webowa do kompleksowego zarządzania warsztatem samochodowym, która u
 ### 1. Autoryzacja Użytkowników
 ![Login Page](screenshots/login.png)
 
-- Rejestracja nowych użytkowników
+- Rejestracja nowych użytkowników (tylko pracownicy firmy)
 - Logowanie za pomocą Supabase Authentication
 - Przesyłanie e-mail'i poprzez serwis Resend
 - Bezpieczny dostęp do systemu
