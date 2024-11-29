@@ -42,9 +42,9 @@ Aplikacja webowa do kompleksowego zarządzania warsztatem samochodowym, która u
 - Dodawanie usług do zlecenia
 - Dodawanie materiałów do zlecenia
 - Dynamiczne obliczanie cen
+- Zapis zlecenia w bazie danych Supabase
 - Generowanie PDF zlecenia
 ![PDF](screenshots/generator_pdf.png)
-- Zapis zlecenia w bazie danych Supabase
 
 ## Technologie
 ![Technologie](screenshots/technologie.png)
