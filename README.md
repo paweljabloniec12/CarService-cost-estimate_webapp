@@ -6,7 +6,7 @@ Aplikacja webowa do kompleksowego zarządzania warsztatem samochodowym, która u
 - Rejestrację i logowanie użytkowników
 - Zarządzanie zleceniami napraw
 - Prowadzenie bazy klientów
-- Śledzenie zleceń, usług i materiałów
+- Operacje CRUD dla zleceń, klientów, pojazdów, usług i materiałów
 
 ## Funkcje Główne
 
