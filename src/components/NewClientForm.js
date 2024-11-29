@@ -49,7 +49,6 @@ const NewClientForm = ({ open, onClose, onClientAdded }) => {
             value={nazwisko}
             onChange={(e) => setNazwisko(e.target.value)}
             fullWidth
-            required
             margin="normal"
           />
           <TextField
@@ -67,7 +66,6 @@ const NewClientForm = ({ open, onClose, onClientAdded }) => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             fullWidth
-            required
             margin="normal"
           />
           <Box sx={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>

@@ -34,7 +34,7 @@ const ClientsTable = () => {
   const [editingClient, setEditingClient] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  // Bardziej specyficzne style z !important
+
   const checkboxColumnStyle = {
     width: '48px !important',
     padding: '10px !important',
@@ -222,8 +222,8 @@ const ClientsTable = () => {
       </div>
 
       <TableContainer component={Paper}>
-        <Table 
-          size="small" 
+        <Table
+          size="small"
           sx={{
             tableLayout: 'fixed',
             '& .MuiTableCell-root': {
@@ -238,7 +238,7 @@ const ClientsTable = () => {
         >
           <TableHead style={{ backgroundColor: "#f5f5f5" }}>
             <TableRow>
-              <TableCell 
+              <TableCell
                 padding="checkbox"
                 sx={checkboxColumnStyle}
               >
@@ -265,7 +265,7 @@ const ClientsTable = () => {
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((client) => (
                 <TableRow key={client.id} hover>
-                  <TableCell 
+                  <TableCell
                     padding="checkbox"
                     sx={checkboxColumnStyle}
                   >
@@ -286,11 +286,13 @@ const ClientsTable = () => {
                     </a>
                   </TableCell>
                   <TableCell sx={columnStyles.email}>
-                    {client.email && (
+                    {client.email ? (
                       <a href={`mailto:${client.email}`} className="email-link">
                         <Mail size={16} />
                         {client.email}
                       </a>
+                    ) : (
+                      <span className="no-email">nie podano</span>
                     )}
                   </TableCell>
                 </TableRow>
@@ -325,46 +327,46 @@ const ClientsTable = () => {
       )}
 
       {/* Okno dialogowe edycji */}
-    {isEditDialogOpen && (
-      <Dialog open={isEditDialogOpen} onClose={handleCloseEditDialog}>
-        <DialogTitle>Edycja klienta</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Imię"
-            value={editingClient.imie || ''}
-            onChange={(e) => setEditingClient({ ...editingClient, imie: e.target.value })}
-            fullWidth
-            margin="dense"
-          />
-          <TextField
-            label="Nazwisko"
-            value={editingClient.nazwisko || ''}
-            onChange={(e) => setEditingClient({ ...editingClient, nazwisko: e.target.value })}
-            fullWidth
-            margin="dense"
-          />
-          <TextField
-            label="Telefon"
-            value={editingClient.telefon || ''}
-            onChange={(e) => setEditingClient({ ...editingClient, telefon: e.target.value })}
-            fullWidth
-            margin="dense"
-          />
-          <TextField
-            label="Email"
-            value={editingClient.email || ''}
-            onChange={(e) => setEditingClient({ ...editingClient, email: e.target.value })}
-            fullWidth
-            margin="dense"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseEditDialog}>Anuluj</Button>
-          <Button onClick={handleSaveClient} color="primary" variant='contained'>Zapisz</Button>
-        </DialogActions>
-      </Dialog>
-    )}
-      
+      {isEditDialogOpen && (
+        <Dialog open={isEditDialogOpen} onClose={handleCloseEditDialog}>
+          <DialogTitle>Edycja klienta</DialogTitle>
+          <DialogContent>
+            <TextField
+              label="Imię"
+              value={editingClient.imie || ''}
+              onChange={(e) => setEditingClient({ ...editingClient, imie: e.target.value })}
+              fullWidth
+              margin="dense"
+            />
+            <TextField
+              label="Nazwisko"
+              value={editingClient.nazwisko || ''}
+              onChange={(e) => setEditingClient({ ...editingClient, nazwisko: e.target.value })}
+              fullWidth
+              margin="dense"
+            />
+            <TextField
+              label="Telefon"
+              value={editingClient.telefon || ''}
+              onChange={(e) => setEditingClient({ ...editingClient, telefon: e.target.value })}
+              fullWidth
+              margin="dense"
+            />
+            <TextField
+              label="Email"
+              value={editingClient.email || ''}
+              onChange={(e) => setEditingClient({ ...editingClient, email: e.target.value })}
+              fullWidth
+              margin="dense"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseEditDialog}>Anuluj</Button>
+            <Button onClick={handleSaveClient} color="primary" variant='contained'>Zapisz</Button>
+          </DialogActions>
+        </Dialog>
+      )}
+
     </div>
   );
 };

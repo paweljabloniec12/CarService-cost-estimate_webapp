@@ -4,7 +4,7 @@ import Modal from './Modal';
 import '../componentsCSS/OrdersTable.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
-import { Phone } from 'lucide-react';
+import { Phone, Mail } from 'lucide-react';
 import supabase from '../supabaseClient.js';
 import {
   Table,
@@ -40,7 +40,7 @@ const OrdersTable = () => {
           id,
           pojazdy (id, producent, model, nr_rejestracyjny),
           uszkodzenia,
-          klienci (id, imie, nazwisko, telefon),
+          klienci (id, imie, nazwisko, telefon, email),
           cena
         `);
 
@@ -77,15 +77,15 @@ const OrdersTable = () => {
           pojazdy (id, producent, model, nr_rejestracyjny),
           uszkodzenia,
           data_zlecenia,
-          klienci (id, imie, nazwisko, telefon),
+          klienci (id, imie, nazwisko, telefon, email),
           cena,
           zlecenia_uslugi (id, usluga_id, ilosc, kwota, uslugi (id, nazwa, cena))
         `)
         .eq('id', orderId)
         .single();
-  
+
       if (orderError) throw orderError;
-  
+
       setFormData(orderData);
       setShowForm(true);
     } catch (error) {
@@ -110,7 +110,7 @@ const OrdersTable = () => {
         .in('id', selectedOrders);
 
       if (error) throw error;
-      
+
       await fetchOrders();
     } catch (error) {
       console.error('Błąd podczas usuwania zleceń:', error);
@@ -136,8 +136,8 @@ const OrdersTable = () => {
   const filteredOrders = orders.filter((order) => {
     const fullName = `${order.klienci.imie} ${order.klienci.nazwisko}`.toLowerCase();
     const registrationNumber = order.pojazdy.nr_rejestracyjny?.toLowerCase() || '';
-    return fullName.includes(searchQuery.toLowerCase()) || 
-           registrationNumber.includes(searchQuery.toLowerCase());
+    return fullName.includes(searchQuery.toLowerCase()) ||
+      registrationNumber.includes(searchQuery.toLowerCase());
   });
 
   return (
@@ -176,7 +176,7 @@ const OrdersTable = () => {
 
       <TableContainer>
         <Table size="small">
-          <TableHead style={{backgroundColor: "#f5f5f5"}}>
+          <TableHead style={{ backgroundColor: "#f5f5f5" }}>
             <TableRow>
               <TableCell padding="checkbox">
                 <Checkbox
@@ -189,7 +189,7 @@ const OrdersTable = () => {
               <TableCell>Pojazd</TableCell>
               <TableCell>Uszkodzenie</TableCell>
               <TableCell>Klient</TableCell>
-              <TableCell style={{textAlign: "center"}}>Cena</TableCell>
+              <TableCell style={{ textAlign: "center" }}>Cena</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -222,7 +222,13 @@ const OrdersTable = () => {
                     <br />
                     {order.pojazdy.nr_rejestracyjny || ''}
                   </TableCell>
-                  <TableCell>{order.uszkodzenia}</TableCell>
+                  <TableCell>
+                    {order.uszkodzenia ? (
+                      order.uszkodzenia
+                    ) : (
+                      <span style={{ color: '#999', fontStyle: 'italic' }}>nie podano</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <strong>{order.klienci.imie} {order.klienci.nazwisko}</strong>
                     <br />
@@ -240,8 +246,23 @@ const OrdersTable = () => {
                       <Phone size={16} />
                       {order.klienci.telefon}
                     </a>
+                    <a
+                      href={`mailto:${order.klienci.email}`}
+                      style={{
+                        color: '#2196f3',
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginTop: '4px'
+                      }}
+                    >
+                      <Mail size={16} />
+                      {order.klienci.email}
+                    </a>
                   </TableCell>
-                  <TableCell style={{textAlign: "center", fontSize: "16px"}}>
+
+                  <TableCell style={{ textAlign: "center", fontSize: "16px" }}>
                     <strong>{order.cena} PLN</strong>
                   </TableCell>
                 </TableRow>

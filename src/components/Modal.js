@@ -1,5 +1,5 @@
 import React from 'react';
-import '../componentsCSS/Modal.css'; // Możesz stylizować modal w tym pliku
+import '../componentsCSS/Modal.css';
 
 const Modal = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null;

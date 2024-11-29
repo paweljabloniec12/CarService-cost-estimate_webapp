@@ -1,0 +1,42 @@
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #1a1a1a;
+}
+
+.login-container-header {
+    width: 100%;
+    max-width: 400px; /* Opcjonalne ograniczenie szerokości dla mniejszych ekranów */
+    text-align: center;
+}
+
+/* Zmieniamy kolor przycisków logowania/rejestracji */
+button[type="submit"] {
+    background-color: #d5641a !important; /* kolor przycisku */
+    color: #ffffff !important; /* kolor tekstu */
+    border: #d5641a;
+}
+
+button[type="submit"]:hover {
+    background-color: #b45017 !important; /* ciemniejszy kolor przycisku przy najechaniu */
+}
+
+
+.navbar-brand {
+    display: flex;
+    justify-content: center;
+    padding-right: 20px; /* Dodajemy odstęp po prawej stronie logo */
+}
+
+.navbar-brand-text {
+    font-size: 20px;
+    text-align: left;
+    color: #d5641a;
+    font-weight: bold;
+    margin-left: 10px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}

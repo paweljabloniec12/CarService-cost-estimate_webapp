@@ -1,27 +1,31 @@
 import React, { useState } from 'react';
-import OrdersTable from './components/OrdersTable';
-import ClientsTable from './components/ClientsTable';
-import VehiclesTable from './components/VehiclesTable';
-import ServicesTable from './components/ServicesTable';
-import Navbar from './components/Navbar';
+import LoginForm from './components/Login';
+import Success from './components/Success';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 
 function App() {
+
   const [activeComponent, setActiveComponent] = useState('orders');
 
-  const handleNavigate = (component) => setActiveComponent(component);
-
-
+  const handleNavigate = (component) => {
+    setActiveComponent(component);
+  };
   return (
-    <div className="App">
-          <Navbar onNavigate={handleNavigate} />
-          <div className="content">
-            {activeComponent === 'orders' && <OrdersTable />}
-            {activeComponent === 'clients' && <ClientsTable />}
-            {activeComponent === 'vehicles' && <VehiclesTable />}
-            {activeComponent === 'services' && <ServicesTable />}
-          </div>
-    </div>
+    <Router>
+      <Routes>
+        <Route path='/' element={<LoginForm />} />
+        <Route
+          path='/home'
+          element={
+            <Success
+              activeComponent={activeComponent}
+              handleNavigate={handleNavigate}
+            />
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 

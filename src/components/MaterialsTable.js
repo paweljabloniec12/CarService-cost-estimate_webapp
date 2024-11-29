@@ -15,70 +15,75 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    MenuItem,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
-import NewServiceForm from './NewServiceForm';
-import '../componentsCSS/ServicesTable.css';
 import supabase from '../supabaseClient.js';
+import '../componentsCSS/MaterialsTable.css';
+import NewMaterialForm from './NewMaterialForm';
 
-
-const ServicesTable = () => {
-    const [services, setServices] = useState([]);
-    const [selectedServices, setSelectedServices] = useState([]);
+const MaterialsTable = () => {
+    const [materials, setMaterials] = useState([]);
+    const [selectedMaterials, setSelectedMaterials] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [searchQuery, setSearchQuery] = useState('');
-    const [showAddServiceModal, setShowAddServiceModal] = useState(false);
-    const [editingService, setEditingService] = useState(null);
-    const [editFormData, setEditFormData] = useState({ nazwa: '', cena: '' });
+    const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
+    const [editingMaterial, setEditingMaterial] = useState(null);
+    const [editFormData, setEditFormData] = useState({
+        nazwa: '',
+        jednostka: '',
+        cena: ''
+    });
 
-    const fetchServices = async () => {
+    const fetchMaterials = async () => {
         try {
-            const { data: services, error } = await supabase.from('uslugi').select('*').order('nazwa', { ascending: true });
+            const { data: materials, error } = await supabase.from('materialy').select('*').order('nazwa', { ascending: true });
             if (error) throw error;
-            const sortedServices = services.sort((a, b) =>
+            const sortedMaterials = materials.sort((a, b) =>
                 a.nazwa.localeCompare(b.nazwa, 'pl', { sensitivity: 'base' })
             );
-            setServices(sortedServices);
-            setSelectedServices([]);
+            setMaterials(sortedMaterials);
+            setSelectedMaterials([]);
             setSelectAll(false);
         } catch (error) {
-            console.error('Error fetching services:', error);
+            console.error('Error fetching materials:', error);
         }
     };
 
     useEffect(() => {
-        fetchServices();
+        fetchMaterials();
     }, []);
 
-    const handleRowClick = (service) => {
-        if (selectedServices.includes(service.id)) return;
-        setEditingService(service);
+    const handleRowClick = (material) => {
+        if (selectedMaterials.includes(material.id)) return;
+        setEditingMaterial(material);
         setEditFormData({
-            nazwa: service.nazwa,
-            cena: service.cena || '0'
+            nazwa: material.nazwa,
+            jednostka: material.jednostka || '',
+            cena: material.cena || '0'
         });
     };
 
     const handleEditFormClose = () => {
-        setEditingService(null);
-        setEditFormData({ nazwa: '', cena: '' });
+        setEditingMaterial(null);
+        setEditFormData({ nazwa: '', jednostka: '', cena: '' });
     };
 
     const handleEditFormSubmit = async (e) => {
         e.preventDefault();
         try {
             const { error } = await supabase
-                .from('uslugi')
+                .from('materialy')
                 .update(editFormData)
-                .eq('id', editingService.id);
+                .eq('id', editingMaterial.id);
             if (error) throw error;
-            await fetchServices();
+            await fetchMaterials();
             handleEditFormClose();
         } catch (error) {
-            console.error('Error updating service:', error);
+            console.error('Error updating material:', error);
         }
     };
 
@@ -99,27 +104,23 @@ const ServicesTable = () => {
         setPage(0);
     };
 
-    const filteredServices = services.filter((service) =>
-        service.nazwa.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredMaterials = materials.filter((material) =>
+        material.nazwa.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const handleAddService = () => {
-        setShowAddServiceModal(true);
-    };
-
-    const handleSelectService = (id) => {
-        setSelectedServices((prevSelected) =>
+    const handleSelectMaterial = (id) => {
+        setSelectedMaterials((prevSelected) =>
             prevSelected.includes(id)
-                ? prevSelected.filter((serviceId) => serviceId !== id)
+                ? prevSelected.filter((materialId) => materialId !== id)
                 : [...prevSelected, id]
         );
     };
 
     const handleSelectAll = () => {
         if (selectAll) {
-            setSelectedServices([]);
+            setSelectedMaterials([]);
         } else {
-            setSelectedServices(services.map((service) => service.id));
+            setSelectedMaterials(materials.map((material) => material.id));
         }
         setSelectAll(!selectAll);
     };
@@ -130,26 +131,27 @@ const ServicesTable = () => {
         return isNaN(numericPrice) ? '-' : `${numericPrice.toFixed(2)} zł`;
     };
 
-    useEffect(() => {
-        if (services.length === 0) {
-            setSelectAll(false);
-        } else {
-            setSelectAll(selectedServices.length === services.length);
-        }
-    }, [selectedServices, services]);
-
-    const deleteSelectedServices = async () => {
+    const deleteSelectedMaterials = async () => {
         try {
             await Promise.all(
-                selectedServices.map((serviceId) =>
-                    supabase.from('uslugi').delete().eq('id', serviceId)
+                selectedMaterials.map((materialId) =>
+                    supabase.from('materialy').delete().eq('id', materialId)
                 )
             );
-            await fetchServices();
+            await fetchMaterials();
         } catch (error) {
-            console.error('Error deleting services:', error);
+            console.error('Error deleting materials:', error);
         }
     };
+
+    useEffect(() => {
+        if (materials.length === 0) {
+            setSelectAll(false);
+        } else {
+            setSelectAll(selectedMaterials.length === materials.length);
+        }
+    }, [selectedMaterials, materials]);
+
 
     return (
         <div className="container">
@@ -157,17 +159,17 @@ const ServicesTable = () => {
                 <Button
                     variant="contained"
                     color="primary"
-                    onClick={handleAddService}
+                    onClick={() => setShowAddMaterialModal(true)}
                     style={{ marginBottom: '10px' }}
                 >
-                    Dodaj usługę
+                    Dodaj materiał
                 </Button>
 
-                {selectedServices.length > 0 && (
+                {selectedMaterials.length > 0 && (
                     <Button
                         variant="contained"
                         color="error"
-                        onClick={deleteSelectedServices}
+                        onClick={deleteSelectedMaterials}
                     >
                         <FontAwesomeIcon icon={faTrash} />
                     </Button>
@@ -177,12 +179,12 @@ const ServicesTable = () => {
             <div className="search-container">
                 <TextField
                     fullWidth
-                    label="Wyszukaj usługę"
+                    label="Wyszukaj materiał"
                     variant="outlined"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     size="small"
-                    disabled={services.length === 0}
+                    disabled={materials.length === 0}
                     className="search-field"
                 />
             </div>
@@ -198,29 +200,31 @@ const ServicesTable = () => {
                                     color="primary"
                                 />
                             </TableCell>
-                            <TableCell className="table-head-cell">Nazwa usługi</TableCell>
-                            <TableCell className="table-head-cell">Cena</TableCell>
+                            <TableCell className="head-cell">Nazwa materiału</TableCell>
+                            <TableCell className="head-cell">Jednostka</TableCell>
+                            <TableCell className="head-cell">Cena</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {filteredServices
+                        {filteredMaterials
                             .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                            .map((service) => (
+                            .map((material) => (
                                 <TableRow
-                                    key={service.id}
+                                    key={material.id}
                                     hover
-                                    onClick={() => handleRowClick(service)}
+                                    onClick={() => handleRowClick(material)}
                                     style={{ cursor: 'pointer' }}
                                 >
                                     <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
                                         <Checkbox
-                                            checked={selectedServices.includes(service.id)}
-                                            onChange={() => handleSelectService(service.id)}
+                                            checked={selectedMaterials.includes(material.id)}
+                                            onChange={() => handleSelectMaterial(material.id)}
                                             color="primary"
                                         />
                                     </TableCell>
-                                    <TableCell>{service.nazwa}</TableCell>
-                                    <TableCell>{formatPrice(service.cena)}</TableCell>
+                                    <TableCell>{material.nazwa}</TableCell>
+                                    <TableCell>{material.jednostka}</TableCell>
+                                    <TableCell>{formatPrice(material.cena)}</TableCell>
                                 </TableRow>
                             ))}
                     </TableBody>
@@ -230,7 +234,7 @@ const ServicesTable = () => {
             <TablePagination
                 rowsPerPageOptions={[10, 25, 50]}
                 component="div"
-                count={filteredServices.length}
+                count={filteredMaterials.length}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}
@@ -238,35 +242,50 @@ const ServicesTable = () => {
                 labelRowsPerPage="Wierszy na stronie:"
             />
 
-            {showAddServiceModal && (
-                <NewServiceForm
-                    open={showAddServiceModal}
+            {showAddMaterialModal && (
+                <NewMaterialForm
+                    open={showAddMaterialModal}
                     onClose={() => {
-                        setShowAddServiceModal(false);
-                        fetchServices();
+                        setShowAddMaterialModal(false);
+                        fetchMaterials(); // Odświeżenie listy materiałów po dodaniu nowego
                     }}
-                    onServiceAdded={() => {
-                        setShowAddServiceModal(false);
-                        fetchServices();
+                    onMaterialAdded={(newMaterialId) => {
+                        setShowAddMaterialModal(false);
+                        fetchMaterials(); // Odśwież dane materiałów
                     }}
                 />
             )}
 
-            {/* Dialog edycji usługi */}
-            <Dialog open={!!editingService} onClose={handleEditFormClose}>
-                <DialogTitle>Edytuj usługę</DialogTitle>
+            {/* Dialog edycji materiału */}
+            <Dialog open={!!editingMaterial} onClose={handleEditFormClose}>
+                <DialogTitle>Edytuj materiał</DialogTitle>
                 <DialogContent>
                     <TextField
                         autoFocus
                         margin="dense"
                         name="nazwa"
-                        label="Nazwa usługi"
+                        label="Nazwa materiału"
                         type="text"
                         fullWidth
                         variant="outlined"
                         value={editFormData.nazwa}
                         onChange={handleEditFormChange}
                     />
+                    <TextField
+                        margin="dense"
+                        name="jednostka"
+                        label="Jednostka"
+                        select
+                        fullWidth
+                        variant="outlined"
+                        value={editFormData.jednostka}
+                        onChange={handleEditFormChange}
+                    >
+                        <MenuItem value="szt">Sztuka (szt)</MenuItem>
+                        <MenuItem value="opak">Opakowanie (opak)</MenuItem>
+                        <MenuItem value="kpl">Komplet (kpl)</MenuItem>
+                        <MenuItem value="L">Litr (L)</MenuItem>
+                    </TextField>
                     <TextField
                         margin="dense"
                         name="cena"
@@ -289,4 +308,4 @@ const ServicesTable = () => {
     );
 };
 
-export default ServicesTable;
+export default MaterialsTable;
