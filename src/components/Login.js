@@ -1,13 +1,15 @@
 import supabase from '../supabaseClient';
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import "../componentsCSS/Login.css";
 
 function Login() {
     const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSignUp, setIsSignUp] = useState(false);
 
     useEffect(() => {
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -27,7 +29,78 @@ function Login() {
         return () => {
             authListener.subscription.unsubscribe();
         };
-    }, []);
+    }, [navigate]);
+
+    const handleSignIn = async (event) => {
+        event.preventDefault();
+        setIsLoading(true);
+        setErrorMessage(null);
+        
+        try {
+            const { error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                switch(error.message) {
+                    case 'Invalid login credentials':
+                        setErrorMessage('Nieprawidłowe dane logowania');
+                        break;
+                    case 'User not found':
+                        setErrorMessage('Użytkownik nie został znaleziony');
+                        break;
+                    case 'Invalid email':
+                        setErrorMessage('Nieprawidłowy format adresu email');
+                        break;
+                    default:
+                        setErrorMessage('Wystąpił błąd podczas logowania');
+                }
+            }
+        } catch (err) {
+            setErrorMessage('Wystąpił nieoczekiwany błąd');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSignUp = async (event) => {
+        event.preventDefault();
+        setIsLoading(true);
+        setErrorMessage(null);
+        
+        try {
+            const { error } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                switch(error.message) {
+                    case 'User already registered':
+                        setErrorMessage('Użytkownik już istnieje');
+                        break;
+                    case 'Invalid email':
+                        setErrorMessage('Nieprawidłowy format adresu email');
+                        break;
+                    case 'Password should be at least 6 characters.':
+                        setErrorMessage('Hasło powinno mieć min. długość: 6');
+                        break;
+                    default:
+                        setErrorMessage('Wystąpił błąd podczas rejestracji');
+                }
+            }
+        } catch (err) {
+            setErrorMessage('Wystąpił nieoczekiwany błąd');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const toggleSignUp = () => {
+        setIsSignUp(!isSignUp);
+        setErrorMessage(null);
+    };
 
     return (
         <div className='login-container'>
@@ -39,64 +112,70 @@ function Login() {
                         <div>SERWISOWY</div>
                     </div>
                 </h1>
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
-                <Auth
-                    supabaseClient={supabase}
-                    appearance={{ theme: ThemeSupa }}
-                    theme="dark"
-                    providers={[]}
-                    localization={{
-                        variables: {
-                            sign_up: {
-                                email_label: 'Adres email',
-                                password_label: 'Hasło',
-                                email_input_placeholder: 'Twój adres email',
-                                password_input_placeholder: 'Twoje hasło',
-                                button_label: 'Zarejestruj się',
-                                loading_button_label: 'Rejestracja...',
-                                social_provider_text: 'Zaloguj się przez {{provider}}',
-                                link_text: 'Nie masz konta? Zarejestruj się',
-                                confirmation_text: 'Sprawdź swoją skrzynkę email, aby potwierdzić rejestrację'
-                            },
-                            sign_in: {
-                                email_label: 'Adres email',
-                                password_label: 'Hasło',
-                                email_input_placeholder: 'Twój adres email',
-                                password_input_placeholder: 'Twoje hasło',
-                                button_label: 'Zaloguj się',
-                                loading_button_label: 'Logowanie...',
-                                social_provider_text: 'Zaloguj się przez {{provider}}',
-                                link_text: 'Masz już konto? Zaloguj się'
-                            },
-                            forgotten_password: {
-                                link_text: 'Zapomniałeś hasła?',
-                                email_label: 'Adres email',
-                                password_label: 'Hasło',
-                                email_input_placeholder: 'Twój adres email',
-                                button_label: 'Wyślij instrukcję resetowania hasła',
-                                loading_button_label: 'Wysyłanie instrukcji...',
-                                confirmation_text: 'Sprawdź swoją skrzynkę email, aby zresetować hasło'
-                            },
-                            update_password: {
-                                password_label: 'Nowe hasło',
-                                password_input_placeholder: 'Twoje nowe hasło',
-                                button_label: 'Zaktualizuj hasło',
-                                loading_button_label: 'Aktualizacja hasła...',
-                                confirmation_text: 'Twoje hasło zostało zaktualizowane'
-                            },
-                            verify_otp: {
-                                email_input_label: 'Adres email',
-                                email_input_placeholder: 'Twój adres email',
-                                phone_input_label: 'Numer telefonu',
-                                phone_input_placeholder: 'Twój numer telefonu',
-                                token_input_label: 'Kod',
-                                token_input_placeholder: 'Wprowadź otrzymany kod',
-                                button_label: 'Zweryfikuj',
-                                loading_button_label: 'Weryfikacja...'
+
+                <div className="supabase-auth-container">
+                    {errorMessage && <div className="error-message">{errorMessage}</div>}
+                    
+                    <form 
+                        onSubmit={isSignUp ? handleSignUp : handleSignIn} 
+                        className="supabase-auth-form"
+                    >
+                        <div className="supabase-auth-input-container">
+                            <label htmlFor="email">
+                                {isSignUp ? 'Adres email' : 'Adres email'}
+                            </label>
+                            <input 
+                                type="email" 
+                                id="email"
+                                name="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Twój adres email"
+                                required
+                                className="supabase-auth-input"
+                            />
+                        </div>
+                        
+                        <div className="supabase-auth-input-container">
+                            <label htmlFor="password">
+                                {isSignUp ? 'Hasło' : 'Hasło'}
+                            </label>
+                            <input 
+                                type="password" 
+                                id="password"
+                                name="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Twoje hasło"
+                                required
+                                className="supabase-auth-input"
+                            />
+                        </div>
+                        
+                        <button 
+                            type="submit" 
+                            className="supabase-auth-button"
+                            disabled={isLoading}
+                        >
+                            {isLoading 
+                                ? (isSignUp ? 'Rejestracja...' : 'Logowanie...') 
+                                : (isSignUp ? 'Zarejestruj się' : 'Zaloguj się')
                             }
-                        }
-                    }}
-                />
+                        </button>
+                    </form>
+
+                    <div className="supabase-auth-link">
+                        <button onClick={toggleSignUp} className="supabase-auth-link-button">
+                            {isSignUp 
+                                ? 'Masz już konto? Zaloguj się' 
+                                : 'Nie masz konta? Zarejestruj się'
+                            }
+                        </button>
+                        <button className="supabase-auth-forgotten-password">
+                            Zapomniałeś hasła?
+                        </button>
+                    </div>
+                </div>
             </header>
         </div>
     );

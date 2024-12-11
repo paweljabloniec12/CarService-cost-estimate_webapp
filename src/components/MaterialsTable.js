@@ -108,6 +108,10 @@ const MaterialsTable = () => {
         material.nazwa.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    useEffect(() => {
+        setPage(0);
+    }, [searchQuery]);
+
     const handleSelectMaterial = (id) => {
         setSelectedMaterials((prevSelected) =>
             prevSelected.includes(id)

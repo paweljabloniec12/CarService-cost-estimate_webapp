@@ -34,24 +34,28 @@
 .nav-button {
     background: none;
     color: white;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: bold;
-    padding: 10px 15px; /* Zmniejszony padding */
-    border-radius: 8px;
+    padding: 10px 15px;
+    border-radius: 4px; /* Zmniejszony promień zaokrągleń */
     cursor: pointer;
-    transition: background-color 0.3s ease, color 0.3s ease;
-    margin: 0;
-    white-space: nowrap; /* Zapobiega zawijaniu tekstu */
+    transition: all 0.3s ease;
+    border: 2px solid #d5641a; /* Dodanie obramowania */
+    text-transform: uppercase; /* Wielkie litery */
+    letter-spacing: 0.5px; /* Delikatne rozstrzelenie liter */
 }
 
 .nav-button.active {
     background-color: #d5641a;
     color: white;
+    border-color: #a04516; /* Ciemniejsza obwódka dla aktywnego przycisku */
 }
 
 .nav-button:hover {
-    background-color: #d5641a;
-    opacity: 0.9;
+    background-color: rgba(213, 100, 26, 0.2); /* Przezroczysty pomarańczowy */
+    border-color: #d5641a; /* Obramowanie w kolorze pomarańczowym */
+    transform: translateY(-2px); /* Delikatne uniesienie przycisku */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Delikatny cień */
 }
 
 .menu-toggle {

@@ -5,7 +5,10 @@ import NewServiceForm from './NewServiceForm';
 import NewMaterialForm from './NewMaterialForm.js';
 import { PDFGenerator } from './PDFGenerator';
 import Tabs from './Tabs';
-import { Autocomplete, TextField, Button, Box, IconButton, InputAdornment, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, useMediaQuery } from '@mui/material';
+import {
+  Autocomplete, TextField, Button, Box, IconButton, InputAdornment,
+  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
+} from '@mui/material';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -27,7 +30,7 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
   const [klientId, setKlientId] = useState(formData?.klienci?.id || '');
   const [pojazdId, setPojazdId] = useState(formData?.pojazdy?.id || '');
   const [uszkodzenia, setUszkodzenia] = useState(formData?.uszkodzenia || '');
-  const [dataZlecenia, setDataZlecenia] = useState(formatDate(formData?.data_zlecenia) || "");
+  const [dataZlecenia, setDataZlecenia] = useState(formData?.data_zlecenia ? formatDate(formData?.data_zlecenia) : "");
   const [addedServices, setAddedServices] = useState(formData?.uslugi || []);
   const [klienci, setKlienci] = useState([]);
   const [pojazdy, setPojazdy] = useState([]);
@@ -43,11 +46,12 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
   const [materialy, setMaterialy] = useState([]);
   const [addedMaterials, setAddedMaterials] = useState([]);
 
+  const [vatPercentage, setVatPercentage] = useState(23);
+
   const [hoveredRowIndex, setHoveredRowIndex] = useState(null);
-  const [showDeleteIcon, setShowDeleteIcon] = useState(null);
-  const [deleteIndex, setDeleteIndex] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const isMobile = useMediaQuery('(max-width:600px)');
+  const [deleteIndex, setDeleteIndex] = useState(null);
+  const [deleteType, setDeleteType] = useState(null);
 
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -215,8 +219,28 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
     return Math.round(num * 100) / 100;
   };
 
-  const calculateTotalPrice = (services) => {
-    return services.reduce((sum, service) => sum + parseFloat(service.total), 0);
+  const calculateVAT = (amount, quantity, vatRate = 23) => {
+    const totalBrutto = amount * quantity;
+    const nettoRate = 100 / (100 + vatRate);
+    const netto = totalBrutto * nettoRate;
+    const vatAmount = totalBrutto - netto;
+
+    return {
+      netto: roundToTwoDecimals(netto),
+      vat: roundToTwoDecimals(vatAmount),
+      brutto: roundToTwoDecimals(totalBrutto)
+    };
+  };
+
+  const calculateTotalPrice = (items, isService = true) => {
+    return items.reduce((sum, item) => {
+      const vatCalculation = calculateVAT(
+        item.total / item.quantity,
+        item.quantity,
+        vatPercentage
+      );
+      return sum + vatCalculation.brutto;
+    }, 0);
   };
 
   const calculateTotalCombinedPrice = () => {
@@ -246,25 +270,30 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
     }
   };
 
-  const handleDeleteClick = (index) => {
+  const handleDeleteClick = (index, type) => {
     setDeleteIndex(index);
+    setDeleteType(type);
     setOpenDialog(true);
   };
 
   const handleDeleteConfirm = () => {
-    setAddedServices(prev => prev.filter((_, i) => i !== deleteIndex));
+    if (deleteType === 'service') {
+      setAddedServices(prev => prev.filter((_, i) => i !== deleteIndex));
+    } else if (deleteType === 'material') {
+      setAddedMaterials(prev => prev.filter((_, i) => i !== deleteIndex));
+    }
     setOpenDialog(false);
     setDeleteIndex(null);
+    setDeleteType(null);
   };
 
-  const handleDeleteMaterialConfirm = () => {
-    setAddedMaterials(prev => prev.filter((_, i) => i !== deleteIndex));
-    setOpenDialog(false);
-    setDeleteIndex(null);
+  // Handle row hover for mobile and desktop
+  const handleRowHover = (index) => {
+    setHoveredRowIndex(index);
   };
 
-  const handleRowClickMobile = (index) => {
-    setShowDeleteIcon((prev) => (prev === index ? null : index));
+  const handleRowLeave = () => {
+    setHoveredRowIndex(null);
   };
 
 
@@ -272,7 +301,7 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
     e.preventDefault();
     setIsFormSubmitted(true);
 
-    if (!klientId || !pojazdId || !dataZlecenia) {
+    if (!klientId || !pojazdId) {
       setErrorMessage('Proszę wypełnić wszystkie wymagane pola.');
       return;
     }
@@ -282,7 +311,7 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
         klient_id: klientId,
         pojazd_id: pojazdId,
         uszkodzenia,
-        data_zlecenia: dataZlecenia,
+        ...(dataZlecenia && { data_zlecenia: dataZlecenia }),
         cena: calculateTotalCombinedPrice(),
       };
 
@@ -406,7 +435,7 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
 
   return (
     <div>
-      <h2>{formData?.id ? `Edycja zlecenia #${formData.id}` : 'Nowe zlecenie'}</h2>
+      <h2 style={{ marginTop: '-10px', padding: '0' }}>{formData?.id ? `Edycja zlecenia #${formData.id}` : 'Nowe zlecenie'}</h2>
 
       {/* Zakładki */}
       <Tabs
@@ -556,26 +585,15 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
                 <TextField
                   label="Data zlecenia"
                   type="date"
-                  sx={{ marginBottom: '15.5rem' }}
                   value={dataZlecenia}
                   onChange={(e) => setDataZlecenia(e.target.value)}
                   InputLabelProps={{
                     shrink: true,
                   }}
                   variant="outlined"
-                  error={!dataZlecenia && isFormSubmitted}
-                  helperText={!dataZlecenia && isFormSubmitted ? 'Proszę wybrać datę zlecenia' : ''}
                 />
               </Box>
             </>
-
-            <PDFGenerator
-              klient={klienci.find((k) => k.id === klientId)}
-              pojazd={pojazdy.find((p) => p.id === pojazdId)}
-              addedServices={addedServices}
-              addedMaterials={addedMaterials}
-              calculateTotalPrice={calculateTotalPrice}
-            />
           </>
         )}
 
@@ -622,78 +640,129 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
             </label>
 
             {/* Tabela do wyświetlania dodanych usług */}
-            <TableContainer component={Paper} style={{ height: 441, maxHeight: 500, overflowX: 'auto' }}>
+            <TableContainer component={Paper} className="table-container">
               <Table stickyHeader aria-label="services table" size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell style={{ width: '35%', minWidth: 80 }}>Nazwa</TableCell>
-                    <TableCell style={{ width: '20%', textAlign: 'center', minWidth: 60 }}>Cena</TableCell>
+                    <TableCell style={{ width: '30%', minWidth: 80 }}>Nazwa</TableCell>
+                    <TableCell style={{ width: '20%', textAlign: 'center', minWidth: 60 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                        <span>Cena</span>
+                        <TextField
+                          type="number"
+                          label="VAT %"
+                          value={vatPercentage}
+                          onChange={(e) => {
+                            const newVat = parseInt(e.target.value) || 0;
+                            setVatPercentage(newVat);
+                          }}
+                          variant="outlined"
+                          size="small"
+                          style={{ width: '70px' }} // Ustaw mniejszą szerokość pola
+                          inputProps={{ min: 0, max: 100 }}
+                        />
+                      </div>
+                    </TableCell>
+
                     <TableCell style={{ width: '15%', textAlign: 'center', minWidth: 50 }}>Ilość</TableCell>
-                    <TableCell style={{ width: '25%', textAlign: 'center', minWidth: 70 }}>Kwota</TableCell>
+                    <TableCell style={{ width: '15%', textAlign: 'center', minWidth: 50 }}>
+                      Netto
+                    </TableCell>
+                    <TableCell style={{ width: '20%', textAlign: 'center', minWidth: 70 }}>
+                      Brutto
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {addedServices.map((service, index) => (
-                    <TableRow
-                      key={index}
-                      onMouseEnter={() => setHoveredRowIndex(index)}
-                      onMouseLeave={() => setHoveredRowIndex(null)}
-                      onClick={() => isMobile && handleRowClickMobile(index)}
-                    >
-                      <TableCell sx={{ fontSize: '1rem' }}>{service.nazwa}</TableCell>
-                      <TableCell>
-                        <TextField
-                          type="number"
-                          inputProps={{ step: "0.01" }}
-                          value={roundToTwoDecimals(service.total / service.quantity)}
-                          onChange={(e) => {
-                            let newPrice = parseFloat(e.target.value);
-                            if (isNaN(newPrice)) newPrice = 0;
-                            const newTotal = roundToTwoDecimals(newPrice * service.quantity);
-                            setAddedServices(prev =>
-                              prev.map((s, i) =>
-                                i === index ? { ...s, cena: newPrice, total: newTotal } : s
-                              )
-                            );
-                          }}
-                          variant="outlined"
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <TextField
-                          type="number"
-                          value={service.quantity}
-                          onChange={(e) => {
-                            let newQuantity = parseInt(e.target.value);
-                            if (isNaN(newQuantity) || newQuantity < 1) newQuantity = 1;
-                            const newTotal = roundToTwoDecimals((service.total / service.quantity) * newQuantity);
-                            setAddedServices(prev =>
-                              prev.map((s, i) =>
-                                i === index ? { ...s, quantity: newQuantity, total: newTotal } : s
-                              )
-                            );
-                          }}
-                          variant="outlined"
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell sx={{ fontSize: '1.1rem' }}>
-                        {roundToTwoDecimals(service.total)} PLN
-                        {(hoveredRowIndex === index || showDeleteIcon === index) && (
-                          <IconButton
-                            onClick={() => handleDeleteClick(index)}
-                            style={{ marginLeft: 8, color: "red" }}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {addedServices.map((service, index) => {
+                    const vatCalculation = calculateVAT(
+                      service.total / service.quantity,
+                      service.quantity,
+                      vatPercentage
+                    );
+
+                    return (
+                      <TableRow
+                        key={index}
+                        onMouseEnter={() => handleRowHover(index)}
+                        onMouseLeave={handleRowLeave}
+                        sx={{
+                          '& .MuiTableCell-root': {
+                            padding: '3px'
+                          }
+                        }}
+                      >
+                        <TableCell sx={{ fontSize: '1rem' }}>{service.nazwa}
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            type="number"
+                            inputProps={{ step: "0.01" }}
+                            value={roundToTwoDecimals(service.total / service.quantity)}
+                            onChange={(e) => {
+                              let newPrice = parseFloat(e.target.value);
+                              if (isNaN(newPrice)) newPrice = 0;
+                              const newTotal = roundToTwoDecimals(newPrice * service.quantity);
+                              setAddedServices(prev =>
+                                prev.map((s, i) =>
+                                  i === index ? { ...s, cena: newPrice, total: newTotal } : s
+                                )
+                              );
+                            }}
+                            variant="outlined"
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            type="number"
+                            value={service.quantity}
+                            onChange={(e) => {
+                              let newQuantity = parseInt(e.target.value);
+                              if (isNaN(newQuantity) || newQuantity < 1) newQuantity = 1;
+                              const newTotal = roundToTwoDecimals((service.total / service.quantity) * newQuantity);
+                              setAddedServices(prev =>
+                                prev.map((s, i) =>
+                                  i === index ? { ...s, quantity: newQuantity, total: newTotal } : s
+                                )
+                              );
+                            }}
+                            variant="outlined"
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '1.1rem', position: 'relative' }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <span>{vatCalculation.netto} zł</span>
+                          </div>
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '1.1rem', position: 'relative' }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <span>{vatCalculation.brutto} zł</span>
+                          </div>
+                          <div style={{ fontSize: '0.8rem', textAlign: 'center' }}>
+                            (w tym {vatCalculation.vat} zł VAT)
+                          </div>
+                          {hoveredRowIndex === index && (
+                            <IconButton
+                              onClick={() => handleDeleteClick(index, 'service')}
+                              style={{
+                                color: 'red',
+                                position: 'absolute',
+                                top: '-5px',
+                                right: '3px',
+                              }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          )}
+                        </TableCell>
+
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
-
               {/* Okno dialogowe do potwierdzenia usunięcia */}
               <Dialog
                 open={openDialog}
@@ -717,18 +786,14 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
             </TableContainer>
 
             <h3 className='final-price-normal'>
-              Cena usług: {calculateTotalPrice(addedServices).toFixed(2)} PLN
+              Cena usług (Brutto): {addedServices.reduce((sum, service) => {
+                const vatCalc = calculateVAT(service.total / service.quantity, service.quantity, vatPercentage);
+                return sum + vatCalc.brutto;
+              }, 0).toFixed(2)} zł
             </h3>
             <h3 className='final-price'>
-              Łączna kwota: {calculateTotalCombinedPrice()} PLN
+              Łączna kwota (Brutto): {calculateTotalCombinedPrice()} zł
             </h3>
-            <PDFGenerator
-              klient={klienci.find((k) => k.id === klientId)}
-              pojazd={pojazdy.find((p) => p.id === pojazdId)}
-              addedServices={addedServices}
-              addedMaterials={addedMaterials}
-              calculateTotalPrice={calculateTotalPrice}
-            />
           </>
         )}
 
@@ -774,121 +839,165 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
               />
             </label>
 
-            <TableContainer component={Paper} style={{ height: 441, maxHeight: 500, overflowX: 'auto' }}>
+            <TableContainer component={Paper} className="table-container">
               <Table stickyHeader aria-label="materials table" size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell style={{ width: '35%', minWidth: 80 }}>Nazwa</TableCell>
-                    <TableCell style={{ width: '20%', textAlign: 'center', minWidth: 60 }}>Cena</TableCell>
+                    <TableCell style={{ width: '30%' }}>Nazwa</TableCell>
+                    <TableCell style={{ width: '20%', textAlign: 'center', minWidth: 60 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                        <span>Cena</span>
+                        <TextField
+                          type="number"
+                          label="VAT %"
+                          value={vatPercentage}
+                          onChange={(e) => {
+                            const newVat = parseInt(e.target.value) || 0;
+                            setVatPercentage(newVat);
+                          }}
+                          variant="outlined"
+                          size="small"
+                          style={{ width: '70px' }} // Ustaw mniejszą szerokość pola
+                          inputProps={{ min: 0, max: 100 }}
+                        />
+                      </div>
+                    </TableCell>
+
                     <TableCell style={{ width: '15%', textAlign: 'center', minWidth: 50 }}>Ilość</TableCell>
-                    <TableCell style={{ width: '25%', textAlign: 'center', minWidth: 70 }}>Kwota</TableCell>
+                    <TableCell style={{ width: '15%', textAlign: 'center', minWidth: 50 }}>
+                      Netto
+                    </TableCell>
+                    <TableCell style={{ width: '20%', textAlign: 'center', minWidth: 70 }}>
+                      Brutto
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {addedMaterials.map((material, index) => (
-                    <TableRow
-                      key={index}
-                      onMouseEnter={() => setHoveredRowIndex(index)}
-                      onMouseLeave={() => setHoveredRowIndex(null)}
-                      onClick={() => isMobile && handleRowClickMobile(index)}
-                    >
-                      <TableCell
+                  {addedMaterials.map((material, index) => {
+                    const vatCalculation = calculateVAT(
+                      material.total / material.quantity,
+                      material.quantity,
+                      vatPercentage
+                    );
+
+                    return (
+                      <TableRow
+                        key={index}
+                        onMouseEnter={() => handleRowHover(index)}
+                        onMouseLeave={handleRowLeave}
                         sx={{
-                          fontSize: '1rem',
-                          wordWrap: 'break-word',
-                          whiteSpace: 'normal',
-                          maxWidth: '200px'
+                          '& .MuiTableCell-root': {
+                            padding: '3px'
+                          }
                         }}
-                      > {material.nazwa}
-                        <TextField
-                          fullWidth
-                          variant="outlined"
-                          size="small"
-                          label="Nr. kat."
-                          value={material.nr_katalogowy || ''}
-                          onChange={(e) => {
-                            const newCatalogNumber = e.target.value;
-                            setAddedMaterials(prev =>
-                              prev.map((m, i) =>
-                                i === index ? { ...m, nr_katalogowy: newCatalogNumber } : m
-                              )
-                            );
-                          }}
-                          margin="dense"
-                          style={{ marginTop: 8 }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <TextField
-                          type="number"
-                          inputProps={{ step: "0.01" }}
-                          value={roundToTwoDecimals(material.total / material.quantity)}
-                          onChange={(e) => {
-                            let newPrice = parseFloat(e.target.value);
-                            if (isNaN(newPrice)) newPrice = 0;
-                            const newTotal = roundToTwoDecimals(newPrice * material.quantity);
-                            setAddedMaterials(prev =>
-                              prev.map((m, i) =>
-                                i === index ? { ...m, cena: newPrice, total: newTotal } : m
-                              )
-                            );
-                          }}
-                          variant="outlined"
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      >
+                        <TableCell sx={{ fontSize: '1rem' }}>
+                          {material.nazwa}
                           <TextField
-                            type="text"
-                            value={material.jednostka === 'L'
-                              ? material.quantity.toString().replace('.', ',')
-                              : material.quantity}
+                            fullWidth
+                            variant="outlined"
+                            size="small"
+                            label="Nr. kat."
+                            value={material.nr_katalogowy || ''}
                             onChange={(e) => {
-                              const inputValue = e.target.value.replace(',', '.');
-                              let newQuantity = material.jednostka === 'L'
-                                ? parseFloat(inputValue)
-                                : parseInt(inputValue);
-
-                              if (material.jednostka === 'L') {
-                                if (isNaN(newQuantity) || newQuantity < 0) newQuantity = 0;
-                              } else {
-                                if (isNaN(newQuantity) || newQuantity < 1) newQuantity = 1;
-                              }
-
-                              const newTotal = roundToTwoDecimals((material.total / material.quantity) * newQuantity);
+                              const newCatalogNumber = e.target.value;
                               setAddedMaterials(prev =>
                                 prev.map((m, i) =>
-                                  i === index ? { ...m, quantity: newQuantity, total: newTotal } : m
+                                  i === index ? { ...m, nr_katalogowy: newCatalogNumber } : m
+                                )
+                              );
+                            }}
+                            margin="dense"
+                            style={{ marginTop: 0 }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            type="number"
+                            inputProps={{ step: "0.01" }}
+                            value={roundToTwoDecimals(material.total / material.quantity)}
+                            onChange={(e) => {
+                              let newPrice = parseFloat(e.target.value);
+                              if (isNaN(newPrice)) newPrice = 0;
+                              const newTotal = roundToTwoDecimals(newPrice * material.quantity);
+                              setAddedMaterials(prev =>
+                                prev.map((m, i) =>
+                                  i === index ? { ...m, cena: newPrice, total: newTotal } : m
                                 )
                               );
                             }}
                             variant="outlined"
                             size="small"
-                            style={{ width: '100px' }}
-                            inputProps={{
-                              pattern: material.jednostka === 'L' ? "[0-9]+([,][0-9]+)?" : undefined
-                            }}
                           />
-                          <span>{material.jednostka || '-'}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell sx={{ fontSize: '1.1rem' }}>
-                        {roundToTwoDecimals(material.total)} PLN
-                        {(hoveredRowIndex === index || showDeleteIcon === index) && (
-                          <IconButton
-                            onClick={() => handleDeleteClick(index)}
-                            style={{ marginLeft: 8, color: "red" }}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <TextField
+                              type="text"
+                              value={material.jednostka === 'L'
+                                ? material.quantity.toString().replace('.', ',')
+                                : material.quantity}
+                              onChange={(e) => {
+                                const inputValue = e.target.value.replace(',', '.');
+                                let newQuantity = material.jednostka === 'L'
+                                  ? parseFloat(inputValue)
+                                  : parseInt(inputValue);
+
+                                if (material.jednostka === 'L') {
+                                  if (isNaN(newQuantity) || newQuantity < 0) newQuantity = 0;
+                                } else {
+                                  if (isNaN(newQuantity) || newQuantity < 1) newQuantity = 1;
+                                }
+
+                                const newTotal = roundToTwoDecimals((material.total / material.quantity) * newQuantity);
+                                setAddedMaterials(prev =>
+                                  prev.map((m, i) =>
+                                    i === index ? { ...m, quantity: newQuantity, total: newTotal } : m
+                                  )
+                                );
+                              }}
+                              variant="outlined"
+                              size="small"
+                              style={{ width: '100px' }}
+                              inputProps={{
+                                pattern: material.jednostka === 'L' ? "[0-9]+([,][0-9]+)?" : undefined
+                              }}
+                            />
+                            <span>{material.jednostka || '-'}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '1.1rem', position: 'relative' }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <span>{vatCalculation.netto} zł</span>
+                          </div>
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '1.1rem', position: 'relative' }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <span>{vatCalculation.brutto} zł</span>
+                          </div>
+                          <div style={{ fontSize: '0.8rem', textAlign: 'center' }}>
+                            (w tym {vatCalculation.vat} zł VAT)
+                          </div>
+                          {hoveredRowIndex === index && (
+                            <IconButton
+                              onClick={() => handleDeleteClick(index, 'material')}
+                              style={{
+                                color: 'red',
+                                position: 'absolute',
+                                top: '-5px',
+                                right: '3px',
+                              }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
-
+              {/* Okno dialogowe do potwierdzenia usunięcia */}
               <Dialog
                 open={openDialog}
                 onClose={() => setOpenDialog(false)}
@@ -903,7 +1012,7 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
                   <Button onClick={() => setOpenDialog(false)} color="primary">
                     Anuluj
                   </Button>
-                  <Button onClick={handleDeleteMaterialConfirm} color="secondary">
+                  <Button onClick={handleDeleteConfirm} color="secondary">
                     Usuń
                   </Button>
                 </DialogActions>
@@ -911,24 +1020,27 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
             </TableContainer>
 
             <h3 className='final-price-normal'>
-              Cena materiałów: {calculateTotalPrice(addedMaterials).toFixed(2)} PLN
+              Cena materiałów (Brutto): {addedMaterials.reduce((sum, material) => {
+                const vatCalc = calculateVAT(material.total / material.quantity, material.quantity, vatPercentage);
+                return sum + vatCalc.brutto;
+              }, 0).toFixed(2)} zł
             </h3>
             <h3 className='final-price'>
-              Łączna kwota: {calculateTotalCombinedPrice()} PLN
+              Łączna kwota (Brutto): {calculateTotalCombinedPrice()} zł
             </h3>
-
-            <PDFGenerator
-              klient={klienci.find((k) => k.id === klientId)}
-              pojazd={pojazdy.find((p) => p.id === pojazdId)}
-              addedServices={addedServices}
-              addedMaterials={addedMaterials}
-              calculateTotalPrice={calculateTotalPrice}
-            />
           </>
         )}
 
+        <PDFGenerator
+          klient={klienci.find((k) => k.id === klientId)}
+          pojazd={pojazdy.find((p) => p.id === pojazdId)}
+          addedServices={addedServices}
+          addedMaterials={addedMaterials}
+          calculateTotalPrice={calculateTotalPrice}
+        />
 
-        <Button type="submit" variant="contained" color="primary">
+
+        <Button type="submit" variant="contained" className='submit-button' sx={{ backgroundColor: "#d5641a" }}>
           Zapisz zlecenie
         </Button>
       </form>

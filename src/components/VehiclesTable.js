@@ -122,6 +122,10 @@ const VehiclesTable = () => {
         return searchString.includes(searchQuery.toLowerCase());
     });
 
+    useEffect(() => {
+        setPage(0);
+    }, [searchQuery]);
+
     const formatMileage = (mileage) => {
         return mileage ? mileage.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " km" : "-";
     };

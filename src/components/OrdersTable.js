@@ -140,6 +140,10 @@ const OrdersTable = () => {
       registrationNumber.includes(searchQuery.toLowerCase());
   });
 
+  useEffect(() => {
+    setPage(0);
+}, [searchQuery]);
+
   return (
     <div className="container">
       <div className="button-container">
@@ -246,21 +250,30 @@ const OrdersTable = () => {
                       <Phone size={16} />
                       {order.klienci.telefon}
                     </a>
-                    <a
-                      href={`mailto:${order.klienci.email}`}
+                    <button
+                      onClick={() => {
+                        const emailUrl = `https://poczta.wp.pl/k/#/compose?to=${encodeURIComponent(order.klienci.email)}`;
+                        window.open(emailUrl, '_blank');
+                      }}
                       style={{
+                        background: 'none',
+                        border: 'none',
                         color: '#2196f3',
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
-                        marginTop: '4px'
+                        marginTop: '4px',
+                        cursor: 'pointer',
+                        padding: 0
                       }}
                     >
                       <Mail size={16} />
                       {order.klienci.email}
-                    </a>
+                    </button>
                   </TableCell>
+
+
 
                   <TableCell style={{ textAlign: "center", fontSize: "16px" }}>
                     <strong>{order.cena} PLN</strong>

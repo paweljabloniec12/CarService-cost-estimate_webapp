@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogActions, DialogContent, DialogTitle, Button, TextField } from '@mui/material';
+import { Dialog, DialogActions, DialogContent, DialogTitle, Button, TextField, Checkbox, FormControlLabel } from '@mui/material';
 import { Page, Text, View, Document, StyleSheet, PDFViewer, PDFDownloadLink, Font, Image } from '@react-pdf/renderer';
 
 Font.register({
@@ -23,6 +23,16 @@ const formatDate = (date) => {
   ];
   const d = new Date(date);
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+};
+
+const calculateTaxBreakdown = (brutto, vatRate = 0.23) => {
+  const netto = brutto / (1 + vatRate);
+  const vat = brutto - netto;
+  return {
+    netto: Number(netto.toFixed(2)),
+    vat: Number(vat.toFixed(2)),
+    brutto: Number(brutto.toFixed(2))
+  };
 };
 
 // Style dla dokumentu PDF
@@ -82,24 +92,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   tableCellIndex: {
-    width: '10%',
+    width: '5%',
     padding: 5,
     fontSize: 10,
     textAlign: 'center',
   },
   tableCellName: {
-    width: '50%',
+    width: '40%',
     padding: 5,
     fontSize: 10,
   },
   tableCellQuantity: {
-    width: '20%',
+    width: '10%',
     padding: 5,
     fontSize: 10,
     textAlign: 'center',
   },
   tableCellPrice: {
-    width: '20%',
+    width: '15%',
     padding: 5,
     fontSize: 10,
     textAlign: 'right',
@@ -132,7 +142,7 @@ const styles = StyleSheet.create({
 });
 
 // Komponent dokumentu PDF
-const KosztorysPDF = ({ data, notes }) => (
+const KosztorysPDF = ({ data, notes, hidePrices, totalRepairCost }) => (
   <Document>
     <Page size="A4" style={styles.page}>
       {/* Nagłówek z logo i datą */}
@@ -165,110 +175,150 @@ const KosztorysPDF = ({ data, notes }) => (
       {/* Lista usług */}
       {data.uslugi.length > 0 && (
         <View>
-          <Text style={styles.title}>WYKONANE PRACE</Text>
+          <Text style={styles.title}>USŁUGI</Text>
           <View style={styles.table}>
             <View style={[styles.tableRow, styles.tableHeader]}>
               <Text style={styles.tableCellIndex}>Lp.</Text>
               <Text style={styles.tableCellName}>Czynność</Text>
-              <Text style={styles.tableCellQuantity}>Ilość</Text>
-              <Text style={styles.tableCellPrice}>Cena brutto/netto</Text>
+              {!hidePrices && (
+                <>
+                  <Text style={styles.tableCellQuantity}>Ilość</Text>
+                  <Text style={styles.tableCellPrice}>Netto</Text>
+                  <Text style={styles.tableCellPrice}>VAT</Text>
+                  <Text style={styles.tableCellPrice}>Brutto</Text>
+                </>
+              )}
             </View>
-            {data.uslugi.map((usluga, index) => (
-              <View key={index} style={styles.tableRow}>
-                <Text style={styles.tableCellIndex}>{index + 1}.</Text>
-                <Text style={styles.tableCellName}>{usluga.nazwa}</Text>
-                <Text style={styles.tableCellQuantity}>{usluga.quantity}</Text>
-                <Text style={styles.tableCellPrice}>{usluga.total.toFixed(2)} PLN</Text>
-              </View>
-            ))}
+            {data.uslugi.map((usluga, index) => {
+              const taxBreakdown = calculateTaxBreakdown(usluga.total);
+              return (
+                <View key={index} style={styles.tableRow}>
+                  <Text style={styles.tableCellIndex}>{index + 1}.</Text>
+                  <Text style={styles.tableCellName}>{usluga.nazwa}</Text>
+                  {!hidePrices && (
+                    <>
+                      <Text style={styles.tableCellQuantity}>{usluga.quantity}</Text>
+                      <Text style={styles.tableCellPrice}>{taxBreakdown.netto.toFixed(2)} PLN</Text>
+                      <Text style={styles.tableCellPrice}>{taxBreakdown.vat.toFixed(2)} PLN</Text>
+                      <Text style={styles.tableCellPrice}>{taxBreakdown.brutto.toFixed(2)} PLN</Text>
+                    </>
+                  )}
+                </View>
+              );
+            })}
           </View>
-          <View style={styles.total}>
-            <Text>
-              Łączny koszt robocizny:{' '}
-              <View style={{
-                backgroundColor: 'rgba(213, 100, 26, 0.5)',
-                paddingHorizontal: 5,
-                borderRadius: 3
-              }}>
-                <Text>{data.sumaUslugi.toFixed(2)} PLN</Text>
-              </View>
-            </Text>
-          </View>
+          {!hidePrices && (
+            <View style={styles.total}>
+              <Text>
+                Koszt robocizny (brutto):{' '}
+                <View style={{
+                  backgroundColor: 'rgba(213, 100, 26, 0.5)',
+                  paddingHorizontal: 5,
+                  borderRadius: 3
+                }}>
+                  <Text>{data.sumaUslugi.toFixed(2)} PLN</Text>
+                </View>
+              </Text>
+            </View>
+          )}
         </View>
       )}
 
       {/* Lista materiałów */}
       {data.materialy.length > 0 && (
         <View>
-          <Text style={styles.title}>CZĘŚCI UŻYTE DO NAPRAWY</Text>
+          <Text style={styles.title}>MATERIAŁY</Text>
           <View style={styles.table}>
             <View style={[styles.tableRow, styles.tableHeader]}>
               <Text style={styles.tableCellIndex}>Lp.</Text>
               <Text style={styles.tableCellName}>Nazwa części</Text>
-              <Text style={styles.tableCellQuantity}>Ilość</Text>
-              <Text style={styles.tableCellPrice}>Cena brutto/netto</Text>
+              {!hidePrices && (
+                <>
+                  <Text style={styles.tableCellQuantity}>Ilość</Text>
+                  <Text style={styles.tableCellPrice}>Netto</Text>
+                  <Text style={styles.tableCellPrice}>VAT</Text>
+                  <Text style={styles.tableCellPrice}>Brutto</Text>
+                </>
+              )}
             </View>
-            {data.materialy.map((material, index) => (
-              <View key={index} style={styles.tableRow}>
-                <Text style={styles.tableCellIndex}>{index + 1}.</Text>
-                <Text style={styles.tableCellName}>
-                  {material.nazwa}
-                  {material.nr_katalogowy && material.nr_katalogowy.trim() !== ''
-                    ? ` - Nr kat: ${material.nr_katalogowy}`
-                    : ''}
-                </Text>
-                <Text style={styles.tableCellQuantity}>
-                  {material.quantity}
-                  {material.materialy?.jednostka && material.materialy.jednostka.trim() !== ''
-                    ? material.materialy.jednostka
-                    : ''}
-                </Text>
-                <Text style={styles.tableCellPrice}>{material.total.toFixed(2)} PLN</Text>
-              </View>
-            ))}
+            {data.materialy.map((material, index) => {
+              const taxBreakdown = calculateTaxBreakdown(material.total);
+              return (
+                <View key={index} style={styles.tableRow}>
+                  <Text style={styles.tableCellIndex}>{index + 1}.</Text>
+                  <Text style={styles.tableCellName}>
+                    {material.nazwa}
+                    {material.nr_katalogowy && material.nr_katalogowy.trim() !== ''
+                      ? ` - Nr kat: ${material.nr_katalogowy}`
+                      : ''}
+                  </Text>
+                  {!hidePrices && (
+                    <>
+                      <Text style={styles.tableCellQuantity}>
+                        {material.quantity}
+                        {material.materialy?.jednostka && material.materialy.jednostka.trim() !== ''
+                          ? material.materialy.jednostka
+                          : ''}
+                      </Text>
+                      <Text style={styles.tableCellPrice}>{taxBreakdown.netto.toFixed(2)} PLN</Text>
+                      <Text style={styles.tableCellPrice}>{taxBreakdown.vat.toFixed(2)} PLN</Text>
+                      <Text style={styles.tableCellPrice}>{taxBreakdown.brutto.toFixed(2)} PLN</Text>
+                    </>
+                  )}
+                </View>
+              );
+            })}
           </View>
-          <View style={styles.total}>
-            <Text>Łączny koszt części: {data.sumaMaterialy.toFixed(2)} PLN</Text>
-          </View>
+          {!hidePrices && (
+            <View style={styles.total}>
+              <Text>Koszt części (brutto): {data.sumaMaterialy.toFixed(2)} PLN</Text>
+            </View>
+          )}
         </View>
       )}
 
       {/* Suma końcowa */}
       <View style={styles.finalTotal}>
-        <Text>Łączny koszt naprawy: {(data.sumaUslugi + data.sumaMaterialy).toFixed(2)} PLN</Text>
+        {hidePrices ? (
+          <Text>Szacowany koszt naprawy: {totalRepairCost.toFixed(2)} PLN</Text>
+        ) : (
+          <Text>Łączny koszt naprawy (brutto): {(data.sumaUslugi + data.sumaMaterialy).toFixed(2)} PLN</Text>
+        )}
       </View>
 
       {/* Uwagi */}
       {notes && notes.trim() !== '' && (
         <View style={styles.notes}>
-          <Text style={styles.title}>INFORMACJE DLA KLIENTA O STANIE POJAZDU:</Text>
+          <Text style={styles.title}>INFORMACJE DLA KLIENTA:</Text>
           <Text>{notes}</Text>
         </View>
       )}
 
       {/* Sekcja podpisów */}
-      <View style={styles.signatureSection}>
-        <Text style={[styles.signatureText, { width: '100%', marginBottom: 20 }]}>
-          Przyjmuję raport o stanie pojazdu. Pojazd odebrałem sprawny oraz wolny od wad i usterek technicznych usuniętych wg powyższej specyfikacji.
-        </Text>
+      {!hidePrices && (
+  <View style={styles.signatureSection}>
+    <Text style={[styles.signatureText, { width: '100%', marginBottom: 20 }]}>
+      Przyjmuję raport o stanie pojazdu. Pojazd odebrałem/am sprawny oraz wolny od wad i usterek technicznych usuniętych wg powyższej specyfikacji.
+    </Text>
 
-        <View style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          marginTop: 10,
-          width: '100%'
-        }}>
-          <View style={{ width: '45%' }}>
-            <Text style={styles.signatureText}>................................................................</Text>
-            <Text style={styles.signatureText}>Pieczątka i podpis</Text>
-          </View>
-
-          <View style={{ width: '45%', alignItems: 'flex-end' }}>
-            <Text style={styles.signatureText}>................................................................</Text>
-            <Text style={styles.signatureText}>Data i podpis klienta</Text>
-          </View>
-        </View>
+    <View style={{
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 10,
+      width: '100%'
+    }}>
+      <View style={{ width: '45%' }}>
+        <Text style={styles.signatureText}>................................................................</Text>
+        <Text style={styles.signatureText}>Pieczątka i podpis</Text>
       </View>
+
+      <View style={{ width: '45%', alignItems: 'flex-end' }}>
+        <Text style={styles.signatureText}>................................................................</Text>
+        <Text style={styles.signatureText}>Data i podpis klienta</Text>
+      </View>
+    </View>
+  </View>
+)}
     </Page>
   </Document>
 );
@@ -284,6 +334,11 @@ export const PDFGenerator = ({
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState('');
   const [showPDF, setShowPDF] = useState(false);
+  const [hidePrices, setHidePrices] = useState(false);
+  const [totalRepairCost, setTotalRepairCost] = useState(0);
+  const [isPDFGenerated, setIsPDFGenerated] = useState(false);
+
+
 
   // Funkcja sprawdzającą czy dane klienta są kompletne
   const isClientDataComplete = () => {
@@ -316,10 +371,14 @@ export const PDFGenerator = ({
     setOpen(false);
     setNotes('');
     setShowPDF(false);
+    setHidePrices(false);
+    setTotalRepairCost(0);
+    setIsPDFGenerated(false);
   };
 
   const handleGenerate = () => {
     setShowPDF(true);
+    setIsPDFGenerated(true);
   };
 
   const getFileName = () => {
@@ -353,6 +412,32 @@ export const PDFGenerator = ({
       <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
         <DialogTitle>Generowanie kosztorysu PDF</DialogTitle>
         <DialogContent>
+          {!isPDFGenerated && (
+            <>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={hidePrices}
+                    onChange={(e) => setHidePrices(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Ukryj ceny szczegółowe"
+              />
+
+              {hidePrices && (
+                <TextField
+                  margin="dense"
+                  label="Łączny koszt naprawy"
+                  fullWidth
+                  type="number"
+                  value={totalRepairCost}
+                  onChange={(e) => setTotalRepairCost(parseFloat(e.target.value) || 0)}
+                />
+              )}
+            </>
+          )}
+        {!isPDFGenerated && (
           <TextField
             autoFocus
             margin="dense"
@@ -362,11 +447,17 @@ export const PDFGenerator = ({
             rows={4}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-          />
+            disabled={isPDFGenerated}
+          />)}
 
           {showPDF && (
             <PDFViewer width="100%" height="500px" style={{ marginTop: '1rem' }}>
-              <KosztorysPDF data={pdfData} notes={notes} />
+              <KosztorysPDF 
+                data={pdfData} 
+                notes={notes} 
+                hidePrices={hidePrices} 
+                totalRepairCost={totalRepairCost} 
+              />
             </PDFViewer>
           )}
         </DialogContent>
@@ -375,16 +466,30 @@ export const PDFGenerator = ({
             Anuluj
           </Button>
           {!showPDF ? (
-            <Button onClick={handleGenerate} color="primary">
+            <Button 
+              onClick={handleGenerate} 
+              color="primary" 
+              disabled={hidePrices && (!totalRepairCost || totalRepairCost <= 0)}
+            >
               Podgląd PDF
             </Button>
           ) : (
             <PDFDownloadLink
-              document={<KosztorysPDF data={pdfData} notes={notes} />}
+              document={
+                <KosztorysPDF 
+                  data={pdfData} 
+                  notes={notes} 
+                  hidePrices={hidePrices} 
+                  totalRepairCost={totalRepairCost} 
+                />
+              }
               fileName={getFileName()}
             >
               {({ loading }) => (
-                <Button color="primary" disabled={loading}>
+                <Button 
+                  color="primary" 
+                  disabled={loading || (hidePrices && (!totalRepairCost || totalRepairCost <= 0))}
+                >
                   {loading ? 'Generowanie...' : 'Pobierz PDF'}
                 </Button>
               )}

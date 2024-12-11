@@ -169,7 +169,6 @@ const NewVehicleForm = ({ open, onClose, onVehicleAdded }) => {
             value={formData.vin}
             onChange={(event) => handleVinChange(event)}
             fullWidth
-            required
             margin="normal"
             error={formData.vin.length > 0 && formData.vin.length !== 17}
             helperText={
@@ -184,7 +183,6 @@ const NewVehicleForm = ({ open, onClose, onVehicleAdded }) => {
             value={formData.nr_rejestracyjny}
             onChange={(event) => handleRegistrationNumberChange(event)}
             fullWidth
-            required
             margin="normal"
           />
 

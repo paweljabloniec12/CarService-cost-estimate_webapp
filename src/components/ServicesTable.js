@@ -102,6 +102,9 @@ const ServicesTable = () => {
     const filteredServices = services.filter((service) =>
         service.nazwa.toLowerCase().includes(searchQuery.toLowerCase())
     );
+    useEffect(() => {
+        setPage(0);
+    }, [searchQuery]);
 
     const handleAddService = () => {
         setShowAddServiceModal(true);

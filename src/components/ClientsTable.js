@@ -146,6 +146,10 @@ const ClientsTable = () => {
     return fullName.includes(searchQuery.toLowerCase());
   });
 
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery]);
+
   // Formatowanie numeru telefonu
   const formatPhoneNumber = (phone) => {
     if (!phone) return '';
@@ -287,14 +291,33 @@ const ClientsTable = () => {
                   </TableCell>
                   <TableCell sx={columnStyles.email}>
                     {client.email ? (
-                      <a href={`mailto:${client.email}`} className="email-link">
+                      <button
+                        onClick={() => {
+                          const emailUrl = `https://poczta.wp.pl/k/#/compose?to=${encodeURIComponent(client.email)}`;
+                          window.open(emailUrl, '_blank');
+                        }}
+                        className="email-link"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#2196f3',
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          padding: 0,
+                          fontSize: 'inherit'
+                        }}
+                      >
                         <Mail size={16} />
                         {client.email}
-                      </a>
+                      </button>
                     ) : (
                       <span className="no-email">nie podano</span>
                     )}
                   </TableCell>
+
                 </TableRow>
               ))}
           </TableBody>

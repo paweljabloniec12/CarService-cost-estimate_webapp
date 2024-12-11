@@ -8,27 +8,101 @@
 
 .login-container-header {
     width: 100%;
-    max-width: 400px; /* Opcjonalne ograniczenie szerokości dla mniejszych ekranów */
+    max-width: 400px;
+    padding: 2rem;
     text-align: center;
 }
 
-/* Zmieniamy kolor przycisków logowania/rejestracji */
-button[type="submit"] {
-    background-color: #d5641a !important; /* kolor przycisku */
-    color: #ffffff !important; /* kolor tekstu */
-    border: #d5641a;
+.logo-img {
+    width: 100px;
+    margin-bottom: 1rem;
 }
 
-button[type="submit"]:hover {
-    background-color: #b45017 !important; /* ciemniejszy kolor przycisku przy najechaniu */
+.supabase-auth-container {
+    background-color: #2c2c2c;
+    border-radius: 8px;
+    padding: 2rem;
 }
 
+.error-message {
+    color: #ff6b6b;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.supabase-auth-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.supabase-auth-input-container {
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.supabase-auth-input-container label {
+    color: white;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.supabase-auth-input {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #3c3c3c;
+    border: 1px solid #4c4c4c;
+    border-radius: 4px;
+    color: white;
+    box-sizing: border-box;
+}
+
+.supabase-auth-button {
+    width: 100%;
+    background-color: #d5641a;
+    color: white;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.supabase-auth-button:hover {
+    background-color: #b45017;
+}
+
+.supabase-auth-button:disabled {
+    background-color: #4c4c4c;
+    cursor: not-allowed;
+}
+
+.supabase-auth-link {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.supabase-auth-link-button,
+.supabase-auth-forgotten-password {
+    background: none;
+    border: none;
+    color: #d5641a;
+    cursor: pointer;
+    text-decoration: underline;
+}
 
 .navbar-brand {
     display: flex;
     justify-content: center;
-    padding-right: 20px; /* Dodajemy odstęp po prawej stronie logo */
+    padding-right: 20px;
 }
+
+.logo-img {
+    width: 160px; /* Zwiększ szerokość */
+    height: auto; /* Automatycznie dopasuj wysokość */
+    margin-bottom: 1rem;
+}
+
 
 .navbar-brand-text {
     font-size: 20px;

@@ -1,5 +1,5 @@
 .formField {
-    margin-bottom: 24px; /* Ustaw odstęp między polami */
+    margin-bottom: 10px; /* Ustaw odstęp między polami */
   }
 
   .tabs {
@@ -36,6 +36,23 @@
     text-align: right;
     margin-bottom: 10px;
     margin-top: 0;
+  }
+
+  .table-container {
+    width: 100%; /* Zajmuje pełną szerokość rodzica */
+    max-width: 100%; /* Maksymalna szerokość nie przekracza kontenera modal */
+    height: 40vh; /* Dynamiczna wysokość */
+    max-height: 40vh; /* Maksymalna wysokość w odniesieniu do wysokości ekranu */
+    overflow-x: auto; /* Poziomy scroll dla szerokich tabel */
+    border-radius: 8px; /* Zaokrąglone rogi */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Delikatny cień dla lepszego wyglądu */
+    border: 1px solid #ddd; /* Subtelna ramka */
+    background-color: #ffffff; /* Tło dla tabeli */
+  }
+  
+  .submit-button:hover {
+    background-color: #b45017; /* Ciemniejszy odcień na hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtelny cień */
   }
 
 

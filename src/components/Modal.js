@@ -10,7 +10,14 @@ const Modal = ({ isOpen, onClose, children }) => {
         <button className="close-button" onClick={onClose}>
           &times;
         </button>
-        {children}
+        <div className="modal-content-wrapper">
+          <div className="modal-form-container">
+            {children}
+          </div>
+          <div className="modal-footer">
+            {/* Tu możesz dodać dodatkowe elementy stopki, jeśli chcesz */}
+          </div>
+        </div>
       </div>
     </div>
   );

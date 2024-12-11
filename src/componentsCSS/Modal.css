@@ -18,7 +18,7 @@
   position: relative;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Stronger shadow for depth */
   width: 800px;
-  height: 800px;
+  height: auto;
   max-width: 90%;
   max-height: 90%;
   border: 2px solid #2c3e50; /* Border for emphasis */
