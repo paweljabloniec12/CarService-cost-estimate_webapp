@@ -917,7 +917,7 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
                         <TableCell>
                           <TextField
                             type="number"
-                            inputProps={{ step: "0.01" }}
+                            inputProps={{ step: "0.01", min: 0 }}
                             value={roundToTwoDecimals(material.total / material.quantity)}
                             onClick={(e) => {
                               e.target.value = '';
