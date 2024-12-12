@@ -697,11 +697,14 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
                         <TableCell>
                           <TextField
                             type="number"
-                            inputProps={{ step: "0.01" }}
+                            inputProps={{ step: "0.01", min: 0 }}
                             value={roundToTwoDecimals(service.total / service.quantity)}
+                            onClick={(e) => {
+                              e.target.value = '';
+                            }}
                             onChange={(e) => {
                               let newPrice = parseFloat(e.target.value);
-                              if (isNaN(newPrice)) newPrice = 0;
+                              if (isNaN(newPrice) || newPrice < 0) newPrice = 0;  // Dodaj sprawdzenie < 0
                               const newTotal = roundToTwoDecimals(newPrice * service.quantity);
                               setAddedServices(prev =>
                                 prev.map((s, i) =>
@@ -916,9 +919,12 @@ const OrderForm = ({ onClose, fetchOrders, formData }) => {
                             type="number"
                             inputProps={{ step: "0.01" }}
                             value={roundToTwoDecimals(material.total / material.quantity)}
+                            onClick={(e) => {
+                              e.target.value = '';
+                            }}
                             onChange={(e) => {
                               let newPrice = parseFloat(e.target.value);
-                              if (isNaN(newPrice)) newPrice = 0;
+                              if (isNaN(newPrice) || newPrice < 0) newPrice = 0;
                               const newTotal = roundToTwoDecimals(newPrice * material.quantity);
                               setAddedMaterials(prev =>
                                 prev.map((m, i) =>

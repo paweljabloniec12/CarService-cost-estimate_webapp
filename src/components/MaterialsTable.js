@@ -298,6 +298,9 @@ const MaterialsTable = () => {
                         fullWidth
                         variant="outlined"
                         value={editFormData.cena}
+                        onClick={(e) => {
+                            e.target.value = '';
+                          }}
                         onChange={handleEditFormChange}
                     />
                 </DialogContent>

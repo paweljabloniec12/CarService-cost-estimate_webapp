@@ -278,6 +278,9 @@ const ServicesTable = () => {
                         fullWidth
                         variant="outlined"
                         value={editFormData.cena}
+                        onClick={(e) => {
+                            e.target.value = '';
+                          }}
                         onChange={handleEditFormChange}
                     />
                 </DialogContent>

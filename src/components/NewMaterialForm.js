@@ -67,6 +67,9 @@ const NewMaterialForm = ({ open, onClose, onMaterialAdded }) => {
                         label="Cena (PLN)"
                         type="number"
                         value={cena}
+                        onClick={(e) => {
+                            e.target.value = '';
+                          }}
                         onChange={(e) => setCena(e.target.value)}
                         fullWidth
                         margin="normal"
