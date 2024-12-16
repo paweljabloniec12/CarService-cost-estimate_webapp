@@ -8,8 +8,10 @@ function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState(null);
+    const [successMessage, setSuccessMessage] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isSignUp, setIsSignUp] = useState(false);
+    const [isForgotPassword, setIsForgotPassword] = useState(false);
 
     useEffect(() => {
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -73,6 +75,9 @@ function Login() {
             const { error } = await supabase.auth.signUp({
                 email: email,
                 password: password,
+                options: {
+                    emailRedirectTo: `${window.location.origin}/reset-password`
+                }
             });
 
             if (error) {
@@ -97,9 +102,60 @@ function Login() {
         }
     };
 
+    const handlePasswordReset = async (event) => {
+        event.preventDefault();
+        setIsLoading(true);
+        setErrorMessage(null);
+        setSuccessMessage(null);
+
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`,
+                // Configure SMTP settings for Resend
+                options: {
+                    emailRedirectTo: `${window.location.origin}/reset-password`,
+                    shouldCreateUser: false
+                }
+            });
+
+            if (error) {
+                console.error('Password reset error:', error);
+                switch(error.message) {
+                    case 'Invalid email':
+                        setErrorMessage('Nieprawidłowy format adresu email');
+                        break;
+                    case 'Rate limit exceeded':
+                        setErrorMessage('Zbyt wiele prób, spróbuj ponownie później');
+                        break;
+                    default:
+                        setErrorMessage('Wystąpił błąd podczas resetowania hasła');
+                }
+            } else {
+                setSuccessMessage('Link do resetowania hasła został wysłany na Twój email');
+                
+                // Additional logging for debugging
+                console.log('Password reset link sent to:', email);
+            }
+        } catch (err) {
+            console.error('Unexpected error:', err);
+            setErrorMessage('Wystąpił nieoczekiwany błąd');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const toggleSignUp = () => {
         setIsSignUp(!isSignUp);
+        setIsForgotPassword(false);
         setErrorMessage(null);
+        setSuccessMessage(null);
+    };
+
+    const toggleForgotPassword = () => {
+        setIsForgotPassword(!isForgotPassword);
+        setIsSignUp(false);
+        setErrorMessage(null);
+        setSuccessMessage(null);
     };
 
     return (
@@ -115,65 +171,110 @@ function Login() {
 
                 <div className="supabase-auth-container">
                     {errorMessage && <div className="error-message">{errorMessage}</div>}
+                    {successMessage && <div className="success-message" style={{color: '#5cdb5c'}}>{successMessage}</div>}
                     
-                    <form 
-                        onSubmit={isSignUp ? handleSignUp : handleSignIn} 
-                        className="supabase-auth-form"
-                    >
-                        <div className="supabase-auth-input-container">
-                            <label htmlFor="email">
-                                {isSignUp ? 'Adres email' : 'Adres email'}
-                            </label>
-                            <input 
-                                type="email" 
-                                id="email"
-                                name="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="Twój adres email"
-                                required
-                                className="supabase-auth-input"
-                            />
-                        </div>
-                        
-                        <div className="supabase-auth-input-container">
-                            <label htmlFor="password">
-                                {isSignUp ? 'Hasło' : 'Hasło'}
-                            </label>
-                            <input 
-                                type="password" 
-                                id="password"
-                                name="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Twoje hasło"
-                                required
-                                className="supabase-auth-input"
-                            />
-                        </div>
-                        
-                        <button 
-                            type="submit" 
-                            className="supabase-auth-button"
-                            disabled={isLoading}
+                    {!isForgotPassword ? (
+                        <form 
+                            onSubmit={isSignUp ? handleSignUp : handleSignIn} 
+                            className="supabase-auth-form"
                         >
-                            {isLoading 
-                                ? (isSignUp ? 'Rejestracja...' : 'Logowanie...') 
-                                : (isSignUp ? 'Zarejestruj się' : 'Zaloguj się')
-                            }
-                        </button>
-                    </form>
+                            <div className="supabase-auth-input-container">
+                                <label htmlFor="email">
+                                    {isSignUp ? 'Adres email' : 'Adres email'}
+                                </label>
+                                <input 
+                                    type="email" 
+                                    id="email"
+                                    name="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Twój adres email"
+                                    required
+                                    className="supabase-auth-input"
+                                />
+                            </div>
+                            
+                            {(isSignUp || !isForgotPassword) && (
+                                <div className="supabase-auth-input-container">
+                                    <label htmlFor="password">Hasło</label>
+                                    <input 
+                                        type="password" 
+                                        id="password"
+                                        name="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Twoje hasło"
+                                        required
+                                        className="supabase-auth-input"
+                                    />
+                                </div>
+                            )}
+                            
+                            <button 
+                                type="submit" 
+                                className="supabase-auth-button"
+                                disabled={isLoading}
+                            >
+                                {isLoading 
+                                    ? (isSignUp ? 'Rejestracja...' : 'Logowanie...') 
+                                    : (isSignUp ? 'Zarejestruj się' : 'Zaloguj się')
+                                }
+                            </button>
+                        </form>
+                    ) : (
+                        <form 
+                            onSubmit={handlePasswordReset} 
+                            className="supabase-auth-form"
+                        >
+                            <div className="supabase-auth-input-container">
+                                <label htmlFor="email">Adres email</label>
+                                <input 
+                                    type="email" 
+                                    id="email"
+                                    name="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Twój adres email"
+                                    required
+                                    className="supabase-auth-input"
+                                />
+                            </div>
+                            
+                            <button 
+                                type="submit" 
+                                className="supabase-auth-button"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Wysyłanie...' : 'Wyślij link do resetowania'}
+                            </button>
+                        </form>
+                    )}
 
                     <div className="supabase-auth-link">
-                        <button onClick={toggleSignUp} className="supabase-auth-link-button">
-                            {isSignUp 
-                                ? 'Masz już konto? Zaloguj się' 
-                                : 'Nie masz konta? Zarejestruj się'
-                            }
-                        </button>
-                        <button className="supabase-auth-forgotten-password">
-                            Zapomniałeś hasła?
-                        </button>
+                        {!isForgotPassword && (
+                            <>
+                                <button onClick={toggleSignUp} className="supabase-auth-link-button">
+                                    {isSignUp 
+                                        ? 'Masz już konto? Zaloguj się' 
+                                        : 'Nie masz konta? Zarejestruj się'
+                                    }
+                                </button>
+                                <button 
+                                    onClick={toggleForgotPassword} 
+                                    className="supabase-auth-forgotten-password"
+                                >
+                                    Zapomniałeś hasła?
+                                </button>
+                            </>
+                        )}
+                        {isForgotPassword && (
+                            <button 
+                                onClick={toggleForgotPassword} 
+                                className="supabase-auth-link-button"
+                            >
+                                Wróć do logowania
+                            </button>
+                        )}
                     </div>
                 </div>
             </header>
