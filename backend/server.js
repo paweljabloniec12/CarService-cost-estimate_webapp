@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors'); // Importowanie cors
 const bodyParser = require('body-parser');
+require('dotenv').config();
+
 
 const klientRoutes = require('./routes/klienci');
 const pojazdRoutes = require('./routes/pojazdy');

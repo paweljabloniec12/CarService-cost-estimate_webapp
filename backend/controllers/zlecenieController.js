@@ -9,7 +9,7 @@ exports.getAllOrders = (req, res) => {
     JOIN pojazdy p ON z.pojazd_id = p.id
     JOIN klienci k ON z.klient_id = k.id
   `;
-  
+
   db.query(query, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.status(200).json(results);
@@ -35,7 +35,7 @@ WHERE z.id = ?;
 
   db.query(query, [id], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
-    
+
     if (results.length === 0) {
       return res.status(404).json({ message: 'Zlecenie nie znalezione' });
     }
@@ -58,7 +58,7 @@ exports.getServicesForOrder = (req, res) => {
 
   db.query(query, [id], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
-    
+
     if (results.length === 0) {
       return res.status(404).json({ message: 'Usługi dla tego zlecenia nie znalezione' });
     }
@@ -71,10 +71,10 @@ exports.getServicesForOrder = (req, res) => {
 // Przykład w kontrolerze dodawania zlecenia
 exports.addOrder = (req, res) => {
   const { klientId, pojazdId, uszkodzenia, dataZlecenia, cena } = req.body;
-  
+
   db.query(
-    'INSERT INTO zlecenia (klient_id, pojazd_id, uszkodzenia, data_zlecenia, cena) VALUES (?, ?, ?, ?, ?)', 
-    [klientId, pojazdId, uszkodzenia, dataZlecenia, cena], 
+    'INSERT INTO zlecenia (klient_id, pojazd_id, uszkodzenia, data_zlecenia, cena) VALUES (?, ?, ?, ?, ?)',
+    [klientId, pojazdId, uszkodzenia, dataZlecenia, cena],
     (err, results) => {
       if (err) {
         console.error('Błąd podczas dodawania zlecenia:', err); // Dodaj log błędu
@@ -91,12 +91,12 @@ exports.addOrder = (req, res) => {
 exports.updateOrder = (req, res) => {
   const { id } = req.params;
   const { klientId, pojazdId, uszkodzenia, dataZlecenia, cena } = req.body;
-  db.query('UPDATE zlecenia SET klient_id = ?, pojazd_id = ?, uszkodzenia = ?, data_zlecenia = ?, cena = ? WHERE id = ?', 
-  [klientId, pojazdId, uszkodzenia, dataZlecenia, cena, id], 
-  (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.status(200).json({ message: 'Dane zlecenia zaktualizowane' });
-  });
+  db.query('UPDATE zlecenia SET klient_id = ?, pojazd_id = ?, uszkodzenia = ?, data_zlecenia = ?, cena = ? WHERE id = ?',
+    [klientId, pojazdId, uszkodzenia, dataZlecenia, cena, id],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(200).json({ message: 'Dane zlecenia zaktualizowane' });
+    });
 };
 
 // Usuń zlecenie
@@ -161,4 +161,5 @@ exports.deleteServicesForOrder = async (req, res) => {
 
 
 
-  
+
+
